@@ -1,926 +1,330 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weekly Purchases Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Roboto', sans-serif;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Equatorial Power Operations Dashboard</title>
 
-        body {
-            background-color: #f5f7fa;
-            color: #333;
-            padding: 20px;
-        }
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-        .dashboard-container {
-            max-width: 1600px;
-            margin: 0 auto;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        h1 {
-            color: #2c3e50;
-            font-weight: 700;
-            font-size: 28px;
-        }
-
-        .description {
-            color: #7f8c8d;
-            margin-bottom: 25px;
-            font-size: 16px;
-            max-width: 800px;
-        }
-
-        .controls {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 25px;
-            flex-wrap: wrap;
-        }
-
-        .control-group {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            min-width: 200px;
-        }
-
-        .control-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #2c3e50;
-        }
-
-        select,
-        input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        .summary-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .summary-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-
-        .summary-card h3 {
-            font-size: 16px;
-            color: #7f8c8d;
-            margin-bottom: 10px;
-        }
-
-        .summary-card .value {
-            font-size: 24px;
-            font-weight: 700;
-            color: #2c3e50;
-        }
-
-        .summary-card .change {
-            font-size: 14px;
-            margin-top: 5px;
-        }
-
-        .positive {
-            color: #2ecc71;
-        }
-
-        .negative {
-            color: #e74c3c;
-        }
-
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
-            gap: 25px;
-            margin-bottom: 30px;
-        }
-
-        .chart-container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            height: 380px;
-        }
-
-        .chart-title {
-            font-size: 18px;
-            font-weight: 500;
-            margin-bottom: 15px;
-            color: #2c3e50;
-            text-align: center;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-
-        .data-table th,
-        .data-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .data-table th {
-            background-color: #2c3e50;
-            color: white;
-            font-weight: 500;
-            position: sticky;
-            top: 0;
-        }
-
-        .data-table tr:hover {
-            background-color: #f5f7fa;
-        }
-
-        .status {
-            padding: 20px;
-            text-align: center;
-            margin: 20px 0;
-            border-radius: 8px;
-            background-color: #e3f2fd;
-            color: #1565c0;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, .3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 10px;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .charts-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .controls {
-                flex-direction: column;
-            }
-
-            .control-group {
-                width: 100%;
-            }
-
-            .chart-container {
-                height: 300px;
-            }
-        }
-    </style>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
+    body { background-color: #f5f7fa; color: #333; padding: 20px; }
+    .dashboard-container { max-width: 1600px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0; }
+    h1 { color: #2c3e50; font-weight: 700; }
+    .controls { display: flex; gap: 12px; flex-wrap: wrap; }
+    .controls select { padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; background: #fff; }
+    .summary { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 16px; margin: 24px 0; }
+    .card { background: #fff; padding: 16px; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+    .card h3 { font-size: 13px; color: #6b7280; margin-bottom: 8px; }
+    .card .big { font-size: 24px; font-weight: 700; color: #111827; }
+    .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(600px, 1fr)); gap: 25px; }
+    .chart-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+    .chart-title { font-size: 18px; font-weight: 500; margin-bottom: 15px; color: #374151; }
+    .data-table { width: 100%; border-collapse: collapse; background: white; margin-top: 24px; }
+    .data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+    .data-table th { background-color: #2c3e50; color: white; font-weight: 500; }
+    .data-table tr:hover { background-color: #f5f7fa; }
+    @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } .chart-container { height: auto; } }
+  </style>
 </head>
-
 <body>
-    <div class="dashboard-container">
-        <header>
-            <h1>Weekly Purchases Dashboard</h1>
-        </header>
+  <div class="dashboard-container">
+    <header>
+      <h1>Equatorial Power Operations Dashboard</h1>
+      <div class="controls">
+        <select id="siteFilter">
+          <option value="__ALL__">All sites</option>
+        </select>
+        <select id="monthFilter">
+          <option value="__ALL__">All months</option>
+        </select>
+      </div>
+    </header>
 
-        <div class="description">
-            This dashboard visualizes data from multiple sites, showing revenue, energy consumption, and customer
-            metrics. Use the filters below to explore the data.
-        </div>
+    <section class="summary">
+      <div class="card"><h3>Total Revenue (USD)</h3><div id="totalRevenue" class="big">—</div></div>
+      <div class="card"><h3>Total Energy (kWh)</h3><div id="totalEnergy" class="big">—</div></div>
+      <div class="card"><h3>Active Customers</h3><div id="totalCustomers" class="big">—</div></div>
+      <div class="card"><h3>Average ARPU (USD)</h3><div id="avgARPU" class="big">—</div></div>
+    </section>
 
-        <div class="controls">
-            <div class="control-group">
-                <label for="siteFilter">Filter by Site:</label>
-                <select id="siteFilter">
-                    <option value="All">All Sites</option>
-                </select>
-            </div>
+    <section class="charts-grid">
+      <div class="chart-container">
+        <div class="chart-title">Monthly Revenue</div>
+        <canvas id="revenueChart" height="240"></canvas>
+      </div>
+      <div class="chart-container">
+        <div class="chart-title">Revenue by Site</div>
+        <canvas id="siteRevenueChart" height="240"></canvas>
+      </div>
+      <div class="chart-container">
+        <div class="chart-title">Planned vs Consumed Energy (kWh)</div>
+        <canvas id="energyChart" height="240"></canvas>
+      </div>
+      <div class="chart-container">
+        <div class="chart-title">Active Customers by Site</div>
+        <canvas id="customersChart" height="240"></canvas>
+      </div>
+    </section>
 
-            <div class="control-group">
-                <label for="monthFilter">Filter by Month:</label>
-                <select id="monthFilter">
-                    <option value="All">All Months</option>
-                </select>
-            </div>
+    <table class="data-table" id="dataTable">
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
 
-            <div class="control-group">
-                <label for="metricFilter">Primary Metric:</label>
-                <select id="metricFilter">
-                    <option value="Monthly Total (USD)">Monthly Revenue</option>
-                    <option value="Consumed kWh">Energy Consumption</option>
-                    <option value="Active Customers">Active Customers</option>
-                    <option value="ARPU (USD)">ARPU</option>
-                </select>
-            </div>
-        </div>
+  <script>
+    // ====== CONFIG: Google Sheet CSV ======
+    const CSV_URL =
+      "https://docs.google.com/spreadsheets/d/1Jl32qnvVwJKd7QduBCiMchIxZtbzHUTHOrKM2YWPdJw/export?format=csv&gid=1837089544";
 
-        <div class="summary-cards">
-            <div class="summary-card">
-                <h3>Total Revenue</h3>
-                <div class="value" id="totalRevenue">$0</div>
-                <div class="change positive" id="revenueChange">+0%</div>
-            </div>
+    // ====== STATE ======
+    let allData = [];
+    let filteredData = [];
+    let revenueChart, siteRevenueChart, energyChart, customersChart;
 
-            <div class="summary-card">
-                <h3>Energy Consumed</h3>
-                <div class="value" id="totalEnergy">0 kWh</div>
-                <div class="change positive" id="energyChange">+0%</div>
-            </div>
+    // ====== UTILS ======
+    const currencyToNumber = (val) => {
+      if (val === null || val === undefined) return 0;
+      if (typeof val === "number") return val;
+      const s = String(val).replace(/[\$,]/g, "").trim();
+      const n = parseFloat(s);
+      return Number.isFinite(n) ? n : 0;
+    };
 
-            <div class="summary-card">
-                <h3>Active Customers</h3>
-                <div class="value" id="totalCustomers">0</div>
-                <div class="change positive" id="customersChange">+0%</div>
-            </div>
+    const intOrZero = (val) => {
+      if (val === null || val === undefined || val === "") return 0;
+      const s = String(val).replace(/,/g, "").trim();
+      const n = parseInt(s, 10);
+      return Number.isFinite(n) ? n : 0;
+    };
 
-            <div class="summary-card">
-                <h3>Average ARPU</h3>
-                <div class="value" id="avgARPU">$0</div>
-                <div class="change positive" id="arpuChange">+0%</div>
-            </div>
-        </div>
+    // Simple CSV parser with quoted fields support
+    function parseCSV(csvText) {
+      const lines = csvText.replace(/\r/g, "").split("\n");
+      if (!lines.length) return [];
+      const headers = lines[0].split(","); // assume no commas in header names
 
-        <div class="charts-grid">
-            <div class="chart-container">
-                <div class="chart-title">Monthly Revenue Trend</div>
-                <canvas id="revenueChart"></canvas>
-            </div>
+      const out = [];
+      for (let i = 1; i < lines.length; i++) {
+        let line = lines[i];
+        if (!line || !line.trim()) continue;
 
-            <div class="chart-container">
-                <div class="chart-title">Revenue by Site</div>
-                <canvas id="siteRevenueChart"></canvas>
-            </div>
-
-            <div class="chart-container">
-                <div class="chart-title">Energy Consumption vs Planned</div>
-                <canvas id="energyChart"></canvas>
-            </div>
-
-            <div class="chart-container">
-                <div class="chart-title">Customer Metrics</div>
-                <canvas id="customersChart"></canvas>
-            </div>
-        </div>
-
-        <div class="data-table-container">
-            <table class="data-table">
-                <thead>
-                    <tr id="tableHeaders"></tr>
-                </thead>
-                <tbody id="tableBody"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <script>
-        // CSV data provided
-        const csvData = `Month,Site Name,Monthly Total (USD),Planned Revenue (USD),Planned ARPU (USD),ARPU (USD),Planned kWh,Consumed kWh,Consumption per user,Vending Customers,Active Customers,Total Customers,Vending/Total,Subscriptions
-1/25/2025,All sites,"$15,721","$21,118",$3.5,$2.6,20399,20044.937,3.1,4118,5952,3417,120.52%,
-1/25/2025,Bugarula,"$1,222","$1,577",$5.7,$4.4,2054,1819,6.5,241,279,296,81.42%,
-1/25/2025,Kishenyi,$54,$74,$4.4,$3.2,109,102,6.0,15,17,18,83.33%,
-1/25/2025,Gakagati,$262,$203,$0.6,$0.8,478,385,1.2,151,333,890,16.97%,
-1/25/2025,Kashiraboba,$764,"$1,056",$2.4,$1.7,1359,908,2.1,430,438,549,78.32%,
-1/25/2025,Bunyakiri,$335,$646,$2.4,$1.3,797,432,1.6,233,266,297,78.45%,
-1/25/2025,Buyumbu,$584,$644,$1.7,$1.5,790,956,2.5,336,379,398,84.42%,
-1/25/2025,Mugote,"$1,513","$1,483",$1.8,$1.8,2190,1704,2.0,760,841,969,78.43%,
-1/25/2025,Lolwe,"$10,987","$15,435",$4.5,$3.2,12622,13738.937,4.0,1952,3399,3474,56.19%,
-2/25/2025,All sites,"$15,374","$19,862",$3.2,$2.5,19004,17875.477,2.4,3753,6137,3417,109.83%,
-2/25/2025,Bugarula,$828,"$1,388",$5.0,$3.0,1807,1214,4.4,223,279,296,75.34%,
-2/25/2025,Kishenyi,$60,$75,$4.2,$3.3,113,93,5.2,14,18,18,77.78%,
-2/25/2025,Gakagati,$307,$149,$0.3,$0.5,351,568.316,1.0,145,583,890,16.29%,
-2/25/2025,Kashiraboba,$713,"$1,013",$2.3,$1.6,1303,746,1.7,430,438,549,78.32%,
-2/25/2025,Bunyakiri,$332,$603,$2.4,$1.3,744,372,1.5,236,254,297,79.46%,
-2/25/2025,Buyumbu,$520,$655,$1.7,$1.4,803,642,1.7,330,375,398,82.91%,
-2/25/2025,Mugote,$885,"$1,435",$1.7,$1.1,2119,1067,1.3,649,823,969,66.98%,
-2/25/2025,Lolwe,"$11,729","$14,544",$4.3,$3.5,11764,13173.161,3.9,1726,3367,3474,49.68%,
-3/25/2025,All sites,"$14,003","$21,662",$4.0,$2.6,20006,16784.637,2.3,3266,5405,3417,95.58%,
-3/25/2025,Bugarula,$945,"$1,526",$5.8,$3.6,1987,1574,6.0,232,263,296,78.38%,
-3/25/2025,Kishenyi,$54,$55,$3.2,$3.2,75,81,4.8,13,17,18,72.22%,
-3/25/2025,Gakagati,$298,$175,$0.3,$0.4,413,489,0.7,126,700,890,14.16%,
-3/25/2025,Kashiraboba,$663,"$1,004",$2.4,$1.6,1291,780,1.8,430,427,549,78.32%,
-3/25/2025,Bunyakiri,$285,$727,$2.9,$1.1,898,337,1.4,235,248,297,79.12%,
-3/25/2025,Buyumbu,$492,$733,$2.1,$1.4,899,557,1.6,314,357,398,78.89%,
-3/25/2025,Mugote,$1,"$1,479",$0.0,$0.0,2184,0,0.0,0,0,969,0.00%,
-3/25/2025,Lolwe,"$11,265","$15,963",$4.7,$3.3,12259,12966.637,3.8,1916,3393,3474,55.15%,
-4/25/2025,All sites,"$14,124","$18,626",$3.3,$2.5,17428,15628.668,2.4,3247,5587,3417,95.02%,
-4/25/2025,Bugarula,"$1,165","$1,457",$5.1,$4.1,1897,1570,5.5,238,284,296,80.41%,
-4/25/2025,Kishenyi,$62,$53,$2.9,$3.5,75,104,5.8,13,18,18,72.22%,
-4/25/2025,Gakagati,$325,$169,$0.2,$0.4,398,624,0.8,157,820,890,17.64%,
-4/25/2025,Kashiraboba,$610,$780,$1.8,$1.4,1003,726,1.6,372,441,549,67.76%,
-4/25/2025,Bunyakiri,$309,$425,$1.7,$1.2,525,355.32,1.4,226,254,297,76.09%,
-4/25/2025,Buyumbu,$500,$481,$1.2,$1.3,591,624,1.6,327,394,398,82.16%,
-4/25/2025,Mugote,$22,"$1,267",$0.0,$0.0,1651,0,0.0,38,0,969,3.92%,
-4/25/2025,Lolwe,"$11,131","$13,994",$4.1,$3.3,11288,11625.348,3.4,1876,3376,3474,54.00%,
-5/25/2025,All sites,"$14,773","$20,035",$3.7,$2.7,18937,17564.786,3.3,3265,5394,3417,95.55%,
-5/25/2025,Bugarula,"$1,165","$1,697",$6.1,$4.2,2210,1675.634,6.0,233,280,296,78.72%,
-5/25/2025,Kishenyi,$59,$30,$1.7,$3.3,44,86.637,4.8,13,18,18,72.22%,
-5/25/2025,Gakagati,$187,$160,$0.2,$0.3,378,515.6,0.8,150,677,890,16.85%,
-5/25/2025,Kashiraboba,$763,$765,$1.7,$1.7,984,830,1.9,391,447,549,71.22%,
-5/25/2025,Bunyakiri,$341,$389,$1.6,$1.4,480,383.4,1.6,225,247,297,75.76%,
-5/25/2025,Buyumbu,$574,$466,$1.3,$1.6,571,665.7,1.8,325,361,398,81.66%,
-5/25/2025,Mugote,$18,"$1,676",$0.0,$0.0,2184,0,0.0,12,0,969,1.24%,
-5/25/2025,Lolwe,"$11,667","$14,852",$4.4,$3.5,12086,13407.815,4.0,1916,3364,3474,55.15%,
-6/25/2025,All sites,"$17,727","$18,658",$3.2,$3.0,19909,19393.2415,3.3,4188,5895,3417,122.56%,
-6/25/2025,Bugarula,"$1,250","$1,646",$5.8,$4.4,2143,1737.4195,6.1,247,283,296,83.45%,
-6/25/2025,Kishenyi,$45,$37,$2.1,$2.5,52,87.984,4.9,12,18,18,66.67%,
-6/25/2025,Gakagati,$333,$208,$0.5,$0.7,491,545.326,1.2,270,454,890,30.34%,
-6/25/2025,Kashiraboba,$843,$827,$1.9,$1.9,1064,852.4,1.9,433,447,549,78.87%,
-6/25/2025,Bunyakiri,$412,$520,$2.1,$1.7,642,396.5,1.6,247,246,297,83.16%,
-6/25/2025,Buyumbu,$670,$496,$1.4,$1.9,609,718.8,2.0,321,355,398,80.65%,
-6/25/2025,Mugote,"$2,766","$1,549",$2.1,$3.8,2019,1268.293,1.7,642,734,969,66.25%,
-6/25/2025,Lolwe,"$11,409","$13,375",$4.0,$3.4,12889,13786.519,4.1,2016,3358,3474,58.03%,
-7/25/2025,All sites,"$18,085","$20,340",$3.4,$3.0,24264,20467.28719,3.4,4266,5958,6892,61.90%,
-7/25/2025,Bugarula,"$1,236","$1,652",$5.9,$4.4,2151,1710.005188,6.1,244,282,296,82.43%,
-7/25/2025,Kishenyi,$68,$42,$2.2,$3.6,52,102.648,5.4,17,19,19,89.47%,
-7/25/2025,Gakagati,$278,$223,$0.5,$0.6,527,489.448,1.1,166,447,890,18.65%,
-7/25/2025,Kashiraboba,$924,$765,$1.7,$2.0,984,938.339,2.1,435,451,549,79.23%,
-7/25/2025,Bunyakiri,$416,$389,$1.6,$1.7,480,435.132,1.8,242,245,297,81.48%,
-7/25/2025,Buyumbu,$681,$466,$1.3,$1.9,571,723.189,2.0,338,362,398,84.92%,
-7/25/2025,Mugote,"$2,159","$1,676",$2.1,$2.7,2184,1804.429,2.3,785,795,969,81.01%,
-7/25/2025,Lolwe,"$12,322","$15,127",$4.5,$3.7,17315,14264.097,4.2,2039,3357,3474,58.69%,
-8/25/2025,All sites,"$16,369","$23,362",$4.0,$2.8,26196,19723.3715,3.4,3742,5882,6891,54.30%,
-8/25/2025,Bugarula,"$1,237","$1,655",$5.9,$4.4,2154,1675.2185,5.9,,282,296,0.00%,
-8/25/2025,Kishenyi,$63,$49,$2.6,$3.3,69,96.989,5.1,,19,18,0.00%,
-8/25/2025,Gakagati,$265,$201,$0.4,$0.6,473,386.338,0.9,124,448,890,13.93%,
-8/25/2025,Kashiraboba,$539,$827,$1.9,$1.3,1064,449.446,1.1,345,425,549,62.84%,
-8/25/2025,Bunyakiri,$428,$520,$2.2,$1.8,642,437.745,1.8,231,238,297,77.78%,
-8/25/2025,Buyumbu,$722,$496,$1.4,$2.0,609,723.363,2.0,332,355,398,83.42%,
-8/25/2025,Mugote,"$1,885","$1,549",$2.0,$2.4,2019,1922.272,2.5,788,771,969,81.32%,
-8/25/2025,Lolwe,"$11,230","$18,065",$5.2,$3.4,19166,14032,4.2,1922,3344,3474,55.33%,
-9/25/2025,All sites,$620,"$25,040",,,7651,,,,,6891,,
-9/25/2025,Bugarula,$193,"$1,712",,,2229,,,,,296,,
-9/25/2025,Kishenyi,$4,$31,,,39,,,,,18,,
-9/25/2025,Gakagati,$0,$177,,,417,,,,,890,,
-9/25/2025,Kashiraboba,$9,"$1,056",,,1359,,,,,549,,
-9/25/2025,Bunyakiri,$58,$646,,,797,,,,,297,,
-9/25/2025,Buyumbu,$98,$644,,,790,,,,,398,,
-9/25/2025,Mugote,$258,"$1,550",,,2020,,,,,969,,
-9/25/2025,Lolwe,$0,"$19,224",,,,,,,,3474,,`;
-
-        // Parse CSV data
-        function parseCSV(csv) {
-            const lines = csv.split('\n');
-            const headers = lines[0].split(',');
-
-            const data = [];
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (line === '') continue;
-
-                const values = [];
-                let current = '';
-                let inQuotes = false;
-
-                for (let j = 0; j < line.length; j++) {
-                    const char = line[j];
-
-                    if (char === '"') {
-                        inQuotes = !inQuotes;
-                    } else if (char === ',' && !inQuotes) {
-                        values.push(current);
-                        current = '';
-                    } else {
-                        current += char;
-                    }
-                }
-                values.push(current);
-
-                // Clean up values
-                const cleanedValues = values.map(v => {
-                    // Remove quotes and dollar signs, and parse numbers
-                    v = v.replace(/["$%,]/g, '');
-                    const num = parseFloat(v);
-                    return isNaN(num) ? v : num;
-                });
-
-                const entry = {};
-                headers.forEach((header, index) => {
-                    entry[header] = cleanedValues[index];
-                });
-
-                data.push(entry);
-            }
-
-            return data;
+        const row = [];
+        let cur = "", inQuotes = false;
+        for (let j = 0; j < line.length; j++) {
+          const ch = line[j];
+          if (ch === '"' && line[j + 1] === '"') { cur += '"'; j++; continue; }
+          if (ch === '"') { inQuotes = !inQuotes; continue; }
+          if (ch === "," && !inQuotes) { row.push(cur); cur = ""; continue; }
+          cur += ch;
         }
-
-        // Process the data and create visualizations
-        let allData = [];
-        let filteredData = [];
-
-        // Chart instances
-        let revenueChart, siteRevenueChart, energyChart, customersChart;
-
-        // Initialize the dashboard
-        function initDashboard() {
-            allData = parseCSV(csvData);
-            filteredData = [...allData];
-
-            // Extract unique sites and months for filters
-            const sites = [...new Set(allData.map(item => item['Site Name']))].filter(site => site !== 'All sites');
-            const months = [...new Set(allData.map(item => item['Month']))].sort();
-
-            populateFilter('siteFilter', sites);
-            populateFilter('monthFilter', months);
-
-            // Process data and create visualizations
-            processData();
-
-            // Set up event listeners for filters
-            setupEventListeners();
-        }
-
-        // Process the data and create visualizations
-        function processData() {
-            // Update summary cards
-            updateSummaryCards();
-
-            // Create charts
-            createCharts();
-
-            // Populate the table
-            populateTable();
-        }
-
-        // Update summary cards
-        function updateSummaryCards() {
-            // Filter out "All sites" entries for calculations
-            const siteData = filteredData.filter(item => item['Site Name'] !== 'All sites');
-
-            // Calculate totals
-            const totalRevenue = siteData.reduce((sum, item) => sum + (item['Monthly Total (USD)'] || 0), 0);
-            const totalEnergy = siteData.reduce((sum, item) => sum + (item['Consumed kWh'] || 0), 0);
-            const totalCustomers = siteData.reduce((sum, item) => sum + (item['Active Customers'] || 0), 0);
-
-            // Calculate average ARPU
-            const arpuValues = siteData.map(item => item['ARPU (USD)']).filter(val => val);
-            const avgARPU = arpuValues.length ? arpuValues.reduce((sum, val) => sum + val, 0) / arpuValues.length : 0;
-
-            // Update DOM elements
-            document.getElementById('totalRevenue').textContent = formatCurrency(totalRevenue);
-            document.getElementById('totalEnergy').textContent = formatNumber(totalEnergy) + ' kWh';
-            document.getElementById('totalCustomers').textContent = formatNumber(totalCustomers);
-            document.getElementById('avgARPU').textContent = formatCurrency(avgARPU);
-
-            // For demonstration, set some arbitrary changes
-            document.getElementById('revenueChange').textContent = '+12.5%';
-            document.getElementById('energyChange').textContent = '+8.2%';
-            document.getElementById('customersChange').textContent = '+5.7%';
-            document.getElementById('arpuChange').textContent = '+3.2%';
-        }
-
-        // Create all charts
-        function createCharts() {
-            createRevenueChart();
-            createSiteRevenueChart();
-            createEnergyChart();
-            createCustomersChart();
-        }
-
-        // Create revenue trend chart
-        function createRevenueChart() {
-            const ctx = document.getElementById('revenueChart').getContext('2d');
-
-            // Group by month and sum revenue
-            const monthlyData = {};
-            filteredData.forEach(item => {
-                if (item['Site Name'] === 'All sites') return;
-
-                const month = item['Month'];
-                const revenue = item['Monthly Total (USD)'] || 0;
-
-                if (!monthlyData[month]) {
-                    monthlyData[month] = 0;
-                }
-
-                monthlyData[month] += revenue;
-            });
-
-            const months = Object.keys(monthlyData).sort();
-            const revenueData = months.map(month => monthlyData[month]);
-
-            if (revenueChart) {
-                revenueChart.destroy();
-            }
-
-            revenueChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: months,
-                    datasets: [{
-                        label: 'Monthly Revenue',
-                        data: revenueData,
-                        borderColor: '#4e73df',
-                        backgroundColor: 'rgba(78, 115, 223, 0.05)',
-                        pointBackgroundColor: '#4e73df',
-                        fill: true,
-                        tension: 0.3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'USD'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Create site revenue chart
-        function createSiteRevenueChart() {
-            const ctx = document.getElementById('siteRevenueChart').getContext('2d');
-
-            // Group by site and sum revenue
-            const siteData = {};
-            filteredData.forEach(item => {
-                if (item['Site Name'] === 'All sites') return;
-
-                const site = item['Site Name'];
-                const revenue = item['Monthly Total (USD)'] || 0;
-
-                if (!siteData[site]) {
-                    siteData[site] = 0;
-                }
-
-                siteData[site] += revenue;
-            });
-
-            const sites = Object.keys(siteData);
-            const revenueData = sites.map(site => siteData[site]);
-
-            if (siteRevenueChart) {
-                siteRevenueChart.destroy();
-            }
-
-            siteRevenueChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: sites,
-                    datasets: [{
-                        label: 'Revenue by Site',
-                        data: revenueData,
-                        backgroundColor: '#1cc88a'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'USD'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Create energy chart
-        function createEnergyChart() {
-            const ctx = document.getElementById('energyChart').getContext('2d');
-
-            // Group by site and sum planned vs consumed energy
-            const siteData = {};
-            filteredData.forEach(item => {
-                if (item['Site Name'] === 'All sites') return;
-
-                const site = item['Site Name'];
-                const planned = item['Planned kWh'] || 0;
-                const consumed = item['Consumed kWh'] || 0;
-
-                if (!siteData[site]) {
-                    siteData[site] = { planned: 0, consumed: 0 };
-                }
-
-                siteData[site].planned += planned;
-                siteData[site].consumed += consumed;
-            });
-
-            const sites = Object.keys(siteData);
-            const plannedData = sites.map(site => siteData[site].planned);
-            const consumedData = sites.map(site => siteData[site].consumed);
-
-            if (energyChart) {
-                energyChart.destroy();
-            }
-
-            energyChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: sites,
-                    datasets: [
-                        {
-                            label: 'Planned kWh',
-                            data: plannedData,
-                            backgroundColor: '#4e73df'
-                        },
-                        {
-                            label: 'Consumed kWh',
-                            data: consumedData,
-                            backgroundColor: '#1cc88a'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'kWh'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Create customers chart
-        function createCustomersChart() {
-            const ctx = document.getElementById('customersChart').getContext('2d');
-
-            // Group by site and get customer metrics
-            const siteData = {};
-            filteredData.forEach(item => {
-                if (item['Site Name'] === 'All sites') return;
-
-                const site = item['Site Name'];
-                const active = item['Active Customers'] || 0;
-                const total = item['Total Customers'] || 0;
-                const vending = item['Vending Customers'] || 0;
-
-                if (!siteData[site]) {
-                    siteData[site] = { active: 0, total: 0, vending: 0 };
-                }
-
-                siteData[site].active += active;
-                siteData[site].total += total;
-                siteData[site].vending += vending;
-            });
-
-            const sites = Object.keys(siteData);
-            const activeData = sites.map(site => siteData[site].active);
-            const totalData = sites.map(site => siteData[site].total);
-            const vendingData = sites.map(site => siteData[site].vending);
-
-            if (customersChart) {
-                customersChart.destroy();
-            }
-
-            customersChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: sites,
-                    datasets: [
-                        {
-                            label: 'Active Customers',
-                            data: activeData,
-                            backgroundColor: '#4e73df'
-                        },
-                        {
-                            label: 'Total Customers',
-                            data: totalData,
-                            backgroundColor: '#e74a3b'
-                        },
-                        {
-                            label: 'Vending Customers',
-                            data: vendingData,
-                            backgroundColor: '#1cc88a'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Customers'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Populate the data table
-        function populateTable() {
-            const tableHeaders = document.getElementById('tableHeaders');
-            const tableBody = document.getElementById('tableBody');
-
-            // Clear existing content
-            tableHeaders.innerHTML = '';
-            tableBody.innerHTML = '';
-
-            // Add headers
-            const headers = Object.keys(filteredData[0] || {});
-            headers.forEach(header => {
-                const th = document.createElement('th');
-                th.textContent = header;
-                tableHeaders.appendChild(th);
-            });
-
-            // Add rows
-            if (filteredData.length === 0) {
-                const tr = document.createElement('tr');
-                const td = document.createElement('td');
-                td.textContent = 'No data available';
-                td.colSpan = headers.length;
-                td.style.textAlign = 'center';
-                tr.appendChild(td);
-                tableBody.appendChild(tr);
-            } else {
-                filteredData.forEach(item => {
-                    const tr = document.createElement('tr');
-                    headers.forEach(header => {
-                        const td = document.createElement('td');
-                        td.textContent = formatValue(item[header], header);
-                        tr.appendChild(td);
-                    });
-                    tableBody.appendChild(tr);
-                });
-            }
-        }
-
-        // Format values based on their type
-        function formatValue(value, header) {
-            if (value === undefined || value === null) return '-';
-
-            if (typeof value === 'number') {
-                if (header.includes('USD')) {
-                    return formatCurrency(value);
-                } else if (header.includes('kWh') || header.includes('Customers')) {
-                    return formatNumber(value);
-                } else if (header.includes('ARPU')) {
-                    return formatCurrency(value);
-                } else if (value % 1 !== 0) {
-                    return value.toFixed(2);
-                }
-            }
-
-            return value;
-        }
-
-        // Format currency
-        function formatCurrency(value) {
-            return '$' + formatNumber(value);
-        }
-
-        // Format number with commas
-        function formatNumber(value) {
-            return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        }
-
-        // Populate filter dropdown
-        function populateFilter(filterId, values) {
-            const filter = document.getElementById(filterId);
-            filter.innerHTML = '';
-
-            // Add default option
-            const defaultOption = document.createElement('option');
-            defaultOption.value = 'All';
-            defaultOption.textContent = filterId === 'siteFilter' ? 'All Sites' : 'All Months';
-            filter.appendChild(defaultOption);
-
-            // Add values
-            values.forEach(value => {
-                const option = document.createElement('option');
-                option.value = value;
-                option.textContent = value;
-                filter.appendChild(option);
-            });
-        }
-
-        // Set up event listeners for filters
-        function setupEventListeners() {
-            document.getElementById('siteFilter').addEventListener('change', function () {
-                applyFilters();
-            });
-
-            document.getElementById('monthFilter').addEventListener('change', function () {
-                applyFilters();
-            });
-
-            document.getElementById('metricFilter').addEventListener('change', function () {
-                // For this demo, we'll just recreate the charts
-                createCharts();
-            });
-        }
-
-        // Apply filters to the data
-        function applyFilters() {
-            const siteFilter = document.getElementById('siteFilter').value;
-            const monthFilter = document.getElementById('monthFilter').value;
-
-            filteredData = allData.filter(item => {
-                // Site filter
-                if (siteFilter !== 'All' && item['Site Name'] !== siteFilter) {
-                    return false;
-                }
-
-                // Month filter
-                if (monthFilter !== 'All' && item['Month'] !== monthFilter) {
-                    return false;
-                }
-
-                return true;
-            });
-
-            // Process data with filters applied
-            processData();
-        }
-
-        // Initialize the dashboard when the page loads
-        window.addEventListener('load', initDashboard);
-    </script>
-
-    <!-- 
-    HOW TO HOST THIS DASHBOARD ON GITHUB PAGES:
-    
-    1. Save this entire file as "index.html" on your computer
-    
-    2. Create a GitHub account (if you don't have one) at github.com
-    
-    3. Create a new repository:
-       - Click the "+" icon in the top right > "New repository"
-       - Name it something like "weekly-purchases-dashboard"
-       - Make it public (required for GitHub Pages)
-       - Initialize with a README (optional)
-    
-    4. Upload your index.html file:
-       - In your new repository, click "Add file" > "Upload files"
-       - Drag and drop your index.html file
-       - Add a commit message and click "Commit changes"
-    
-    5. Enable GitHub Pages:
-       - Go to your repository's "Settings" tab
-       - Scroll down to the "GitHub Pages" section
-       - Under "Source", select "main" branch (or "master" if that's what you have)
-       - Click Save
-    
-    6. Your dashboard will be published at:
-       https://[your-username].github.io/[repository-name]/
-    
-    7. It may take a few minutes for the site to become available
-    
-    Note: For private data, consider using a private repository and 
-    GitHub Pages for private repositories (requires GitHub Pro).
-    -->
+        row.push(cur);
+
+        const obj = {};
+        headers.forEach((h, idx) => { obj[h.trim()] = (row[idx] ?? "").trim(); });
+        // Coerce known numeric fields
+        obj["Monthly Total (USD)"] = currencyToNumber(obj["Monthly Total (USD)"]);
+        obj["Planned Revenue (USD)"] = currencyToNumber(obj["Planned Revenue (USD)"]);
+        obj["Planned ARPU (USD)"] = currencyToNumber(obj["Planned ARPU (USD)"]);
+        obj["ARPU (USD)"] = currencyToNumber(obj["ARPU (USD)"]);
+        obj["Planned kWh"] = currencyToNumber(obj["Planned kWh"]);
+        obj["Consumed kWh"] = currencyToNumber(obj["Consumed kWh"]);
+        obj["Consumption per user"] = currencyToNumber(obj["Consumption per user"]);
+        obj["Vending Customers"] = intOrZero(obj["Vending Customers"]);
+        obj["Active Customers"] = intOrZero(obj["Active Customers"]);
+        obj["Total Customers"] = intOrZero(obj["Total Customers"]);
+        out.push(obj);
+      }
+      return out;
+    }
+
+    function populateFilter(selectId, values) {
+      const sel = document.getElementById(selectId);
+      const current = sel.value;
+      sel.innerHTML = "";
+      const makeOpt = (v, label) => {
+        const o = document.createElement("option");
+        o.value = v; o.textContent = label ?? v;
+        sel.appendChild(o);
+      };
+      if (selectId === "siteFilter") makeOpt("__ALL__", "All sites");
+      if (selectId === "monthFilter") makeOpt("__ALL__", "All months");
+      values.forEach(v => makeOpt(v, v));
+      if ([...sel.options].some(o => o.value === current)) sel.value = current;
+    }
+
+    function updateSummaryCards() {
+      const siteRows = filteredData.filter(d => d["Site Name"] && d["Site Name"] !== "All sites");
+      const totalRevenue = siteRows.reduce((s, r) => s + (r["Monthly Total (USD)"] || 0), 0);
+      const totalEnergy = siteRows.reduce((s, r) => s + (r["Consumed kWh"] || 0), 0);
+      const totalCustomers = siteRows.reduce((s, r) => s + (r["Active Customers"] || 0), 0);
+
+      const arpus = siteRows.map(r => r["ARPU (USD)"]).filter(x => Number.isFinite(x));
+      const avgARPU = arpus.length ? arpus.reduce((s, x) => s + x, 0) / arpus.length : 0;
+
+      document.getElementById("totalRevenue").textContent = totalRevenue.toLocaleString("en-US", {style:"currency", currency:"USD", maximumFractionDigits:0});
+      document.getElementById("totalEnergy").textContent = totalEnergy.toLocaleString("en-US");
+      document.getElementById("totalCustomers").textContent = totalCustomers.toLocaleString("en-US");
+      document.getElementById("avgARPU").textContent = avgARPU.toLocaleString("en-US", {style:"currency", currency:"USD"});
+    }
+
+    function processDataAndRender() {
+      updateSummaryCards();
+      renderRevenueTrend();
+      renderRevenueBySite();
+      renderEnergyCompare();
+      renderCustomersBySite();
+      renderTable();
+    }
+
+    function renderRevenueTrend() {
+      const monthly = {};
+      filteredData.forEach(r => {
+        if (r["Site Name"] === "All sites") return;
+        const m = r["Month"];
+        monthly[m] = (monthly[m] || 0) + (r["Monthly Total (USD)"] || 0);
+      });
+      const labels = Object.keys(monthly).sort();
+      const values = labels.map(k => monthly[k]);
+
+      const ctx = document.getElementById("revenueChart").getContext("2d");
+      if (revenueChart) revenueChart.destroy();
+      revenueChart = new Chart(ctx, {
+        type: "line",
+        data: { labels, datasets: [{ label: "Monthly Revenue", data: values, fill: true }] },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function renderRevenueBySite() {
+      const bySite = {};
+      filteredData.forEach(r => {
+        if (r["Site Name"] === "All sites") return;
+        const s = r["Site Name"];
+        bySite[s] = (bySite[s] || 0) + (r["Monthly Total (USD)"] || 0);
+      });
+      const labels = Object.keys(bySite);
+      const values = labels.map(k => bySite[k]);
+
+      const ctx = document.getElementById("siteRevenueChart").getContext("2d");
+      if (siteRevenueChart) siteRevenueChart.destroy();
+      siteRevenueChart = new Chart(ctx, {
+        type: "bar",
+        data: { labels, datasets: [{ label: "Revenue by Site", data: values }] },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function renderEnergyCompare() {
+      const bySite = {};
+      filteredData.forEach(r => {
+        if (r["Site Name"] === "All sites") return;
+        const s = r["Site Name"];
+        if (!bySite[s]) bySite[s] = { planned: 0, consumed: 0 };
+        bySite[s].planned += r["Planned kWh"] || 0;
+        bySite[s].consumed += r["Consumed kWh"] || 0;
+      });
+      const labels = Object.keys(bySite);
+      const planned = labels.map(k => bySite[k].planned);
+      const consumed = labels.map(k => bySite[k].consumed);
+
+      const ctx = document.getElementById("energyChart").getContext("2d");
+      if (energyChart) energyChart.destroy();
+      energyChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            { label: "Planned kWh", data: planned },
+            { label: "Consumed kWh", data: consumed }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function renderCustomersBySite() {
+      const bySite = {};
+      filteredData.forEach(r => {
+        if (r["Site Name"] === "All sites") return;
+        const s = r["Site Name"];
+        bySite[s] = (bySite[s] || 0) + (r["Active Customers"] || 0);
+      });
+      const labels = Object.keys(bySite);
+      const values = labels.map(k => bySite[k]);
+
+      const ctx = document.getElementById("customersChart").getContext("2d");
+      if (customersChart) customersChart.destroy();
+      customersChart = new Chart(ctx, {
+        type: "bar",
+        data: { labels, datasets: [{ label: "Active Customers", data: values }] },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function renderTable() {
+      if (!allData.length) return;
+      const head = document.getElementById("tableHead");
+      const body = document.getElementById("tableBody");
+      head.innerHTML = ""; body.innerHTML = "";
+
+      const headers = Object.keys(allData[0]);
+      const trh = document.createElement("tr");
+      headers.forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
+      head.appendChild(trh);
+
+      filteredData.forEach(r => {
+        const tr = document.createElement("tr");
+        headers.forEach(h => {
+          const td = document.createElement("td");
+          td.textContent = r[h];
+          tr.appendChild(td);
+        });
+        body.appendChild(tr);
+      });
+    }
+
+    function applyFilters() {
+      const siteSel = document.getElementById("siteFilter").value;
+      const monthSel = document.getElementById("monthFilter").value;
+
+      filteredData = allData.filter(r => {
+        const okSite = (siteSel === "__ALL__") || (r["Site Name"] === siteSel);
+        const okMonth = (monthSel === "__ALL__") || (r["Month"] === monthSel);
+        return okSite && okMonth;
+      });
+
+      processDataAndRender();
+    }
+
+    function initFilters() {
+      const sites = [...new Set(allData.map(r => r["Site Name"]).filter(s => s && s !== "All sites"))].sort();
+      const months = [...new Set(allData.map(r => r["Month"]).filter(Boolean))].sort();
+      populateFilter("siteFilter", sites);
+      populateFilter("monthFilter", months);
+      document.getElementById("siteFilter").addEventListener("change", applyFilters);
+      document.getElementById("monthFilter").addEventListener("change", applyFilters);
+    }
+
+    async function loadData() {
+      const resp = await fetch(CSV_URL, { cache: "no-store" });
+      if (!resp.ok) throw new Error("Failed to load CSV: " + resp.status);
+      const csv = await resp.text();
+      allData = parseCSV(csv);
+      filteredData = [...allData];
+      initFilters();
+      processDataAndRender();
+    }
+
+    // Kickoff
+    loadData().catch(err => {
+      console.error(err);
+      alert("Failed to load dashboard data. Please ensure the Google Sheet is shared or published for CSV access.");
+    });
+  </script>
 </body>
-
 </html>

@@ -61,23 +61,23 @@
     </header>
 
     <section class="summary">
-            <div class=" card total-revenue">
-                <h3>Total Revenue (USD)</h3>
-                <div id="totalRevenue" class="big">—</div>
-            </div>
-            <div class="card total-energy">
-                <h3>Total Energy (kWh)</h3>
-                <div id="totalEnergy" class="big">—</div>
-            </div>
-            <div class=" card active-customers">
-                <h3>Max Active Customers</h3>
-                <div id="maxCustomers" class="big">—</div>
-            </div>
-            <div class=" card avg-arpu">
-                <h3>Average ARPU (USD)</h3>
-                <div id="avgARPU" class="big">—</div>
-            </div>
-        </section>
+      <div class="card total-revenue">
+        <h3>Total Revenue (USD)</h3>
+        <div id="totalRevenue" class="big">—</div>
+      </div>
+      <div class="card total-energy">
+        <h3>Total Energy (kWh)</h3>
+        <div id="totalEnergy" class="big">—</div>
+      </div>
+      <div class="card active-customers">
+        <h3>Max Active Customers</h3>
+        <div id="maxCustomers" class="big">—</div>
+      </div>
+      <div class="card avg-arpu">
+        <h3>Average ARPU (USD)</h3>
+        <div id="avgARPU" class="big">—</div>
+      </div>
+    </section>
 
     <section class="charts-grid">
       <div class="chart-container">
@@ -197,14 +197,20 @@
       const siteRows = filteredData.filter(d => d["Site Name"] && d["Site Name"] !== "All sites");
       const totalRevenue = siteRows.reduce((s, r) => s + (r["Monthly Total (USD)"] || 0), 0);
       const totalEnergy = siteRows.reduce((s, r) => s + (r["Consumed kWh"] || 0), 0);
-      const totalCustomers = siteRows.reduce((s, r) => s + (r["Active Customers"] || 0), 0);
+      
+      // FIXED: Calculate maximum active customers instead of sum
+      const maxCustomers = siteRows.reduce((max, r) => {
+        const customers = r["Active Customers"] || 0;
+        return customers > max ? customers : max;
+      }, 0);
 
       const arpus = siteRows.map(r => r["ARPU (USD)"]).filter(x => Number.isFinite(x));
       const avgARPU = arpus.length ? arpus.reduce((s, x) => s + x, 0) / arpus.length : 0;
 
       document.getElementById("totalRevenue").textContent = totalRevenue.toLocaleString("en-US", {style:"currency", currency:"USD", maximumFractionDigits:0});
       document.getElementById("totalEnergy").textContent = totalEnergy.toLocaleString("en-US");
-      document.getElementById("totalCustomers").textContent = totalCustomers.toLocaleString("en-US");
+      // FIXED: Update the correct element ID
+      document.getElementById("maxCustomers").textContent = maxCustomers.toLocaleString("en-US");
       document.getElementById("avgARPU").textContent = avgARPU.toLocaleString("en-US", {style:"currency", currency:"USD"});
     }
 
@@ -257,7 +263,17 @@
       if (revenueChart) revenueChart.destroy();
       revenueChart = new Chart(ctx, {
         type: "line",
-        data: { labels, datasets: [{ label: "Monthly Revenue", data: values, fill: true }] },
+        data: { 
+          labels, 
+          datasets: [{ 
+            label: "Monthly Revenue", 
+            data: values, 
+            fill: true,
+            borderColor: '#4e73df',
+            backgroundColor: 'rgba(78, 115, 223, 0.1)',
+            tension: 0.3
+          }] 
+        },
         options: { responsive: true, maintainAspectRatio: false }
       });
     }
@@ -276,8 +292,16 @@
         data: {
           labels,
           datasets: [
-            { label: "Planned ARPU (USD)", data: planned },
-            { label: "Actual ARPU (USD)", data: actual }
+            { 
+              label: "Planned ARPU (USD)", 
+              data: planned,
+              backgroundColor: '#3498db'
+            },
+            { 
+              label: "Actual ARPU (USD)", 
+              data: actual,
+              backgroundColor: '#2ecc71'
+            }
           ]
         },
         options: { responsive: true, maintainAspectRatio: false }
@@ -298,8 +322,16 @@
         data: {
           labels,
           datasets: [
-            { label: "Planned kWh", data: planned },
-            { label: "Consumed kWh", data: consumed }
+            { 
+              label: "Planned kWh", 
+              data: planned,
+              backgroundColor: '#3498db'
+            },
+            { 
+              label: "Consumed kWh", 
+              data: consumed,
+              backgroundColor: '#e74c3c'
+            }
           ]
         },
         options: { responsive: true, maintainAspectRatio: false }
@@ -321,9 +353,21 @@
         data: {
           labels,
           datasets: [
-            { label: "Active Customers", data: active },
-            { label: "Vending Customers", data: vending },
-            { label: "Total Customers", data: total }
+            { 
+              label: "Active Customers", 
+              data: active,
+              backgroundColor: '#3498db'
+            },
+            { 
+              label: "Vending Customers", 
+              data: vending,
+              backgroundColor: '#2ecc71'
+            },
+            { 
+              label: "Total Customers", 
+              data: total,
+              backgroundColor: '#e74c3c'
+            }
           ]
         },
         options: { responsive: true, maintainAspectRatio: false }
@@ -346,13 +390,23 @@
         type: "line",
         data: {
           labels,
-          datasets: [{ label: "Vending / Total (%)", data: ratio, fill: false }]
+          datasets: [{ 
+            label: "Vending / Total (%)", 
+            data: ratio, 
+            fill: false,
+            borderColor: '#9b59b6',
+            tension: 0.3
+          }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           scales: {
-            y: { ticks: { callback: v => v + "%" } }
+            y: { 
+              ticks: { callback: v => v + "%" },
+              suggestedMin: 0,
+              suggestedMax: 100
+            }
           }
         }
       });
@@ -373,7 +427,14 @@
         const tr = document.createElement("tr");
         headers.forEach(h => {
           const td = document.createElement("td");
-          td.textContent = r[h];
+          // Format numeric values
+          if (h.includes("USD") && typeof r[h] === "number") {
+            td.textContent = r[h].toLocaleString("en-US", {style:"currency", currency:"USD"});
+          } else if ((h.includes("kWh") || h.includes("Customers")) && typeof r[h] === "number") {
+            td.textContent = r[h].toLocaleString("en-US");
+          } else {
+            td.textContent = r[h];
+          }
           tr.appendChild(td);
         });
         body.appendChild(tr);
@@ -403,10 +464,74 @@
     }
 
     async function loadData() {
-      const resp = await fetch(CSV_URL, { cache: "no-store" });
-      if (!resp.ok) throw new Error("Failed to load CSV: " + resp.status);
-      const csv = await resp.text();
-      allData = parseCSV(csv);
+      try {
+        const resp = await fetch(CSV_URL, { cache: "no-store" });
+        if (!resp.ok) throw new Error("Failed to load CSV: " + resp.status);
+        const csv = await resp.text();
+        allData = parseCSV(csv);
+        filteredData = [...allData];
+        initFilters();
+        processDataAndRender();
+      } catch (err) {
+        console.error(err);
+        // Fallback to sample data if CSV loading fails
+        alert("Failed to load live data. Using sample data instead.");
+        loadSampleData();
+      }
+    }
+
+    function loadSampleData() {
+      // Sample data for demonstration
+      allData = [
+        {
+          "Month": "1/25/2025",
+          "Site Name": "Bugarula",
+          "Monthly Total (USD)": 1222,
+          "Planned Revenue (USD)": 1577,
+          "Planned ARPU (USD)": 5.7,
+          "ARPU (USD)": 4.4,
+          "Planned kWh": 2054,
+          "Consumed kWh": 1819,
+          "Consumption per user": 6.5,
+          "Vending Customers": 241,
+          "Active Customers": 279,
+          "Total Customers": 296,
+          "Vending/Total": "81.42%",
+          "Subscriptions": ""
+        },
+        {
+          "Month": "2/25/2025",
+          "Site Name": "Bugarula",
+          "Monthly Total (USD)": 828,
+          "Planned Revenue (USD)": 1388,
+          "Planned ARPU (USD)": 5.0,
+          "ARPU (USD)": 3.0,
+          "Planned kWh": 1807,
+          "Consumed kWh": 1214,
+          "Consumption per user": 4.4,
+          "Vending Customers": 223,
+          "Active Customers": 279,
+          "Total Customers": 296,
+          "Vending/Total": "75.34%",
+          "Subscriptions": ""
+        },
+        {
+          "Month": "3/25/2025",
+          "Site Name": "Bugarula",
+          "Monthly Total (USD)": 945,
+          "Planned Revenue (USD)": 1526,
+          "Planned ARPU (USD)": 5.8,
+          "ARPU (USD)": 3.6,
+          "Planned kWh": 1987,
+          "Consumed kWh": 1574,
+          "Consumption per user": 6.0,
+          "Vending Customers": 232,
+          "Active Customers": 263,
+          "Total Customers": 296,
+          "Vending/Total": "78.38%",
+          "Subscriptions": ""
+        }
+      ];
       filteredData = [...allData];
       initFilters();
       processDataAndRender();
@@ -420,4 +545,3 @@
   </script>
 </body>
 </html>
-

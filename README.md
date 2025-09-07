@@ -43,7 +43,7 @@ The data includes monthly metrics from January to September 2025.
 
 This dashboard is hosted on GitHub Pages for easy access without any server requirements.
 
-Live demo: [https://your-username.github.io/Equatorial-Power-Operations-Dashboard/](https://Kagodo707/Equatorial-Power-Operations-Dashboard/)
+Live demo: [https://kagodo707.github.io/Equatorial-Power-Operations-Dashboard/](https://Kagodo707/Equatorial-Power-Operations-Dashboard/)
 
 ## Installation
 
@@ -61,7 +61,7 @@ To customize this dashboard with your own data:
 
 ## Browser Support
 
-This dashboard works in all modern browsers including:
+This dashboard works in all modern browsers, including:
 - Chrome (recommended)
 - Firefox
 - Safari
@@ -79,5 +79,5 @@ Contributions, issues, and feature requests are welcome! Feel free to check [iss
 
 Your Name - [Emmanuel Kagodo](kagsemma@gmail.com)
 
-Project Link: [https://your-username.github.io/Equatorial-Power-Operations-Dashboard/](https://Kagodo707/Equatorial-Power-Operations-Dashboard/)
+Project Link: [https://kagodo707.github.io/Equatorial-Power-Operations-Dashboard/](https://Kagodo707/Equatorial-Power-Operations-Dashboard/)
 

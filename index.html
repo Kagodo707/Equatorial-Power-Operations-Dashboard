@@ -10,44 +10,40 @@
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
- <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
-  body { background-color: #f5f7fa; color: #333; padding: 20px; }
-  .dashboard-container { max-width: 1400px; margin: 0 auto; }
-  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0; }
-  h1 { color: #2c3e50; font-weight: 700; }
-  .controls { display: flex; gap: 12px; flex-wrap: wrap; }
-  .controls select { padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; background: #fff; }
+    body { background-color: #f5f7fa; color: #333; padding: 20px; }
+    .dashboard-container { max-width: 1400px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0; }
+    h1 { color: #2c3e50; font-weight: 700; }
+    .controls { display: flex; gap: 12px; flex-wrap: wrap; }
+    .controls select { padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; background: #fff; }
 
-  .summary { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 16px; margin: 24px 0; }
-  .card { background: #fff; padding: 16px; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
-  .card h3 { font-size: 13px; color: #6b7280; margin-bottom: 8px; }
-  .card .big { font-size: 24px; font-weight: 700; color: #111827; }
+    .summary { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 16px; margin: 24px 0; }
+    .card { background: #fff; padding: 16px; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+    .card h3 { font-size: 13px; color: #6b7280; margin-bottom: 8px; }
+    .card .big { font-size: 24px; font-weight: 700; color: #111827; }
 
-  /* Charts layout */
-  .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 18px; }
-  .chart-container { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
-  .chart-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; color: #374151; }
+    /* Charts layout */
+    .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 18px; }
+    .chart-container { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+    .chart-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; color: #374151; }
 
-  /* Key fix: explicitly size canvases to avoid vertical overflow */
-  .chart-canvas {
-    width: 100% !important;
-    max-width: 100%;
-    height: 320px !important;
-    display: block;
-  }
+    /* Constrain canvases to avoid vertical overflow */
+    .chart-canvas {
+      width: 100% !important;
+      max-width: 100%;
+      height: 320px !important;
+      display: block;
+    }
 
-  .data-table { width: 100%; border-collapse: collapse; background: white; margin-top: 24px; }
-  .data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
-  .data-table th { background-color: #2c3e50; color: white; font-weight: 500; }
-  .data-table tr:hover { background-color: #f5f7fa; }
+    .data-table { width: 100%; border-collapse: collapse; background: white; margin-top: 24px; }
+    .data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+    .data-table th { background-color: #2c3e50; color: white; font-weight: 500; }
+    .data-table tr:hover { background-color: #f5f7fa; }
 
-  @media (max-width: 900px) {
-    .charts-grid { grid-template-columns: 1fr; }
-    .chart-canvas { height: 280px !important; }
-  }
-</style>
-a (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } .chart-container { height: auto; } }
+    @media (max-width: 900px) {
+      .charts-grid { grid-template-columns: 1fr; }
+      .chart-canvas { height: 280px !important; }
+    }
   </style>
 </head>
 <body>
@@ -74,19 +70,27 @@ a (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } .chart-conta
     <section class="charts-grid">
       <div class="chart-container">
         <div class="chart-title">Monthly Revenue</div>
-        <canvas id="revenueChart" height=""></canvas>
+        <canvas id="revenueChart" class="chart-canvas"></canvas>
       </div>
+
       <div class="chart-container">
-        <div class="chart-title">Revenue by Site</div>
-        <canvas id="siteRevenueChart" height="240"></canvas>
+        <div class="chart-title">Planned ARPU vs Actual ARPU (by Month)</div>
+        <canvas id="arpuChart" class="chart-canvas"></canvas>
       </div>
+
       <div class="chart-container">
-        <div class="chart-title">Planned vs Consumed Energy (kWh)</div>
-        <canvas id="energyChart" height="240"></canvas>
+        <div class="chart-title">Planned vs Consumed Energy (kWh) by Month</div>
+        <canvas id="energyChart" class="chart-canvas"></canvas>
       </div>
+
       <div class="chart-container">
-        <div class="chart-title">Active Customers by Site</div>
-        <canvas id="customersChart" height="240"></canvas>
+        <div class="chart-title">Active vs Vending vs Total Customers (by Month)</div>
+        <canvas id="customersChart" class="chart-canvas"></canvas>
+      </div>
+
+      <div class="chart-container">
+        <div class="chart-title">Vending / Total Customers (Share)</div>
+        <canvas id="vendingRatioChart" class="chart-canvas"></canvas>
       </div>
     </section>
 
@@ -104,7 +108,7 @@ a (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } .chart-conta
     // ====== STATE ======
     let allData = [];
     let filteredData = [];
-    let revenueChart, siteRevenueChart, energyChart, customersChart;
+    let revenueChart, arpuChart, energyChart, customersChart, vendingRatioChart;
 
     // ====== UTILS ======
     const currencyToNumber = (val) => {
@@ -126,7 +130,7 @@ a (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } .chart-conta
     function parseCSV(csvText) {
       const lines = csvText.replace(/\r/g, "").split("\n");
       if (!lines.length) return [];
-      const headers = lines[0].split(","); // assume no commas in header names
+      const headers = lines[0].split(",");
 
       const out = [];
       for (let i = 1; i < lines.length; i++) {
@@ -192,12 +196,38 @@ a (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } .chart-conta
       document.getElementById("avgARPU").textContent = avgARPU.toLocaleString("en-US", {style:"currency", currency:"USD"});
     }
 
+    // ====== AGGREGATION HELPERS (by Month) ======
+    const groupByMonth = (rows) => {
+      const m = {};
+      rows.forEach(r => {
+        const mo = r["Month"];
+        if (!mo) return;
+        if (!m[mo]) m[mo] = [];
+        m[mo].push(r);
+      });
+      return m;
+    };
+
+    const monthsSorted = (obj) => Object.keys(obj).sort();
+
+    // Weighted average helper (weights by Active Customers)
+    function weightedAvg(rows, valueKey, weightKey = "Active Customers") {
+      let num = 0, den = 0;
+      rows.forEach(r => {
+        const v = +r[valueKey] || 0;
+        const w = +r[weightKey] || 0;
+        if (w > 0) { num += v * w; den += w; }
+      });
+      return den ? num / den : 0;
+    }
+
     function processDataAndRender() {
       updateSummaryCards();
       renderRevenueTrend();
-      renderRevenueBySite();
-      renderEnergyCompare();
-      renderCustomersBySite();
+      renderArpuMonthly();
+      renderEnergyMonthly();
+      renderCustomersMonthly();
+      renderVendingRatioMonthly();
       renderTable();
     }
 
@@ -216,42 +246,38 @@ a (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } .chart-conta
       revenueChart = new Chart(ctx, {
         type: "line",
         data: { labels, datasets: [{ label: "Monthly Revenue", data: values, fill: true }] },
-        options: { responsive: true, maintainAspectRatio: true
-                 }
+        options: { responsive: true, maintainAspectRatio: false }
       });
     }
 
-    function renderRevenueBySite() {
-      const bySite = {};
-      filteredData.forEach(r => {
-        if (r["Site Name"] === "All sites") return;
-        const s = r["Site Name"];
-        bySite[s] = (bySite[s] || 0) + (r["Monthly Total (USD)"] || 0);
-      });
-      const labels = Object.keys(bySite);
-      const values = labels.map(k => bySite[k]);
+    // NEW: Planned ARPU vs Actual ARPU by Month (weighted by Active Customers)
+    function renderArpuMonthly() {
+      const groups = groupByMonth(filteredData.filter(r => r["Site Name"] !== "All sites"));
+      const labels = monthsSorted(groups);
+      const planned = labels.map(m => weightedAvg(groups[m], "Planned ARPU (USD)"));
+      const actual = labels.map(m => weightedAvg(groups[m], "ARPU (USD)"));
 
-      const ctx = document.getElementById("siteRevenueChart").getContext("2d");
-      if (siteRevenueChart) siteRevenueChart.destroy();
-      siteRevenueChart = new Chart(ctx, {
+      const ctx = document.getElementById("arpuChart").getContext("2d");
+      if (arpuChart) arpuChart.destroy();
+      arpuChart = new Chart(ctx, {
         type: "bar",
-        data: { labels, datasets: [{ label: "Revenue by Site", data: values }] },
-        options: { responsive: true, maintainAspectRatio: true }
+        data: {
+          labels,
+          datasets: [
+            { label: "Planned ARPU (USD)", data: planned },
+            { label: "Actual ARPU (USD)", data: actual }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
       });
     }
 
-    function renderEnergyCompare() {
-      const bySite = {};
-      filteredData.forEach(r => {
-        if (r["Site Name"] === "All sites") return;
-        const s = r["Site Name"];
-        if (!bySite[s]) bySite[s] = { planned: 0, consumed: 0 };
-        bySite[s].planned += r["Planned kWh"] || 0;
-        bySite[s].consumed += r["Consumed kWh"] || 0;
-      });
-      const labels = Object.keys(bySite);
-      const planned = labels.map(k => bySite[k].planned);
-      const consumed = labels.map(k => bySite[k].consumed);
+    // UPDATED: Energy — months on X-axis (sum across sites)
+    function renderEnergyMonthly() {
+      const groups = groupByMonth(filteredData.filter(r => r["Site Name"] !== "All sites"));
+      const labels = monthsSorted(groups);
+      const planned = labels.map(m => groups[m].reduce((s, r) => s + (+r["Planned kWh"] || 0), 0));
+      const consumed = labels.map(m => groups[m].reduce((s, r) => s + (+r["Consumed kWh"] || 0), 0));
 
       const ctx = document.getElementById("energyChart").getContext("2d");
       if (energyChart) energyChart.destroy();
@@ -264,26 +290,59 @@ a (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } .chart-conta
             { label: "Consumed kWh", data: consumed }
           ]
         },
-        options: { responsive: true, maintainAspectRatio: true }
+        options: { responsive: true, maintainAspectRatio: false }
       });
     }
 
-    function renderCustomersBySite() {
-      const bySite = {};
-      filteredData.forEach(r => {
-        if (r["Site Name"] === "All sites") return;
-        const s = r["Site Name"];
-        bySite[s] = (bySite[s] || 0) + (r["Active Customers"] || 0);
-      });
-      const labels = Object.keys(bySite);
-      const values = labels.map(k => bySite[k]);
+    // UPDATED: Customers — months on X-axis (sum across sites)
+    function renderCustomersMonthly() {
+      const groups = groupByMonth(filteredData.filter(r => r["Site Name"] !== "All sites"));
+      const labels = monthsSorted(groups);
+      const active = labels.map(m => groups[m].reduce((s, r) => s + (+r["Active Customers"] || 0), 0));
+      const vending = labels.map(m => groups[m].reduce((s, r) => s + (+r["Vending Customers"] || 0), 0));
+      const total = labels.map(m => groups[m].reduce((s, r) => s + (+r["Total Customers"] || 0), 0));
 
       const ctx = document.getElementById("customersChart").getContext("2d");
       if (customersChart) customersChart.destroy();
       customersChart = new Chart(ctx, {
         type: "bar",
-        data: { labels, datasets: [{ label: "Active Customers", data: values }] },
-        options: { responsive: true, maintainAspectRatio: true }
+        data: {
+          labels,
+          datasets: [
+            { label: "Active Customers", data: active },
+            { label: "Vending Customers", data: vending },
+            { label: "Total Customers", data: total }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    // NEW: Vending / Total share (months on X-axis)
+    function renderVendingRatioMonthly() {
+      const groups = groupByMonth(filteredData.filter(r => r["Site Name"] !== "All sites"));
+      const labels = monthsSorted(groups);
+      const ratio = labels.map(m => {
+        const vend = groups[m].reduce((s, r) => s + (+r["Vending Customers"] || 0), 0);
+        const tot = groups[m].reduce((s, r) => s + (+r["Total Customers"] || 0), 0);
+        return tot ? (vend / tot) * 100 : 0;
+      });
+
+      const ctx = document.getElementById("vendingRatioChart").getContext("2d");
+      if (vendingRatioChart) vendingRatioChart.destroy();
+      vendingRatioChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{ label: "Vending / Total (%)", data: ratio, fill: false }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { ticks: { callback: v => v + "%" } }
+          }
+        }
       });
     }
 
@@ -349,4 +408,3 @@ a (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } .chart-conta
   </script>
 </body>
 </html>
-

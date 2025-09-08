@@ -11,7 +11,7 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
     body { background-color: #f5f7fa; color: #333; padding: 20px; }
-    .dashboard-container { max-width: 1400px; margin: 0 auto; }
+    .dashboard-container { max-width: 1600px; margin: 0 auto; }
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0; }
     h1 { color: #2c3e50; font-weight: 700; }
     .controls { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -23,7 +23,7 @@
     .card .big { font-size: 24px; font-weight: 700; color: #111827; }
 
     /* Charts layout */
-    .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 18px; }
+    .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 18px; }
     .chart-container { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
     .chart-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; color: #374151; }
 
@@ -81,28 +81,33 @@
 
     <section class="charts-grid">
       <div class="chart-container">
-        <div class="chart-title">Monthly Revenue</div>
+        <div class="chart-title">Monthly Revenue vs Planned Revenue</div>
         <canvas id="revenueChart" class="chart-canvas"></canvas>
       </div>
 
       <div class="chart-container">
-        <div class="chart-title">Planned ARPU vs Actual ARPU (by Month)</div>
+        <div class="chart-title">Planned ARPU vs Actual ARPU</div>
         <canvas id="arpuChart" class="chart-canvas"></canvas>
       </div>
 
       <div class="chart-container">
-        <div class="chart-title">Planned vs Consumed Energy (kWh) by Month</div>
+        <div class="chart-title">Planned vs Consumed Energy (kWh)</div>
         <canvas id="energyChart" class="chart-canvas"></canvas>
       </div>
 
       <div class="chart-container">
-        <div class="chart-title">Active vs Vending vs Total Customers (by Month)</div>
+        <div class="chart-title">Customer Distribution</div>
         <canvas id="customersChart" class="chart-canvas"></canvas>
       </div>
 
       <div class="chart-container">
-        <div class="chart-title">Vending / Total Customers (Share)</div>
-        <canvas id="vendingRatioChart" class="chart-canvas"></canvas>
+        <div class="chart-title">Customer Ratios</div>
+        <canvas id="customerRatiosChart" class="chart-canvas"></canvas>
+      </div>
+
+      <div class="chart-container">
+        <div class="chart-title">Consumption per User (kWh)</div>
+        <canvas id="consumptionChart" class="chart-canvas"></canvas>
       </div>
     </section>
 
@@ -120,7 +125,7 @@
     // ====== STATE ======
     let allData = [];
     let filteredData = [];
-    let revenueChart, arpuChart, energyChart, customersChart, vendingRatioChart;
+    let revenueChart, arpuChart, energyChart, customersChart, customerRatiosChart, consumptionChart;
 
     // ====== UTILS ======
     const currencyToNumber = (val) => {
@@ -137,6 +142,19 @@
       const n = parseInt(s, 10);
       return Number.isFinite(n) ? n : 0;
     };
+
+    // Format month to "Jan 2025" format
+    function formatMonth(dateStr) {
+      if (!dateStr) return "";
+      const parts = dateStr.split('/');
+      if (parts.length < 2) return dateStr;
+      
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const month = parseInt(parts[0], 10) - 1;
+      const year = parts[2] || "2025";
+      
+      return `${monthNames[month]} ${year}`;
+    }
 
     // Simple CSV parser with quoted fields support
     function parseCSV(csvText) {
@@ -161,7 +179,15 @@
         row.push(cur);
 
         const obj = {};
-        headers.forEach((h, idx) => { obj[h.trim()] = (row[idx] ?? "").trim(); });
+        headers.forEach((h, idx) => { 
+          obj[h.trim()] = (row[idx] ?? "").trim(); 
+        });
+        
+        // Format month
+        if (obj["Month"]) {
+          obj["Formatted Month"] = formatMonth(obj["Month"]);
+        }
+        
         // Coerce known numeric fields
         obj["Monthly Total (USD)"] = currencyToNumber(obj["Monthly Total (USD)"]);
         obj["Planned Revenue (USD)"] = currencyToNumber(obj["Planned Revenue (USD)"]);
@@ -198,7 +224,7 @@
       const totalRevenue = siteRows.reduce((s, r) => s + (r["Monthly Total (USD)"] || 0), 0);
       const totalEnergy = siteRows.reduce((s, r) => s + (r["Consumed kWh"] || 0), 0);
       
-      // FIXED: Calculate maximum active customers instead of sum
+      // Calculate maximum active customers instead of sum
       const maxCustomers = siteRows.reduce((max, r) => {
         const customers = r["Active Customers"] || 0;
         return customers > max ? customers : max;
@@ -209,7 +235,6 @@
 
       document.getElementById("totalRevenue").textContent = totalRevenue.toLocaleString("en-US", {style:"currency", currency:"USD", maximumFractionDigits:0});
       document.getElementById("totalEnergy").textContent = totalEnergy.toLocaleString("en-US");
-      // FIXED: Update the correct element ID
       document.getElementById("maxCustomers").textContent = maxCustomers.toLocaleString("en-US");
       document.getElementById("avgARPU").textContent = avgARPU.toLocaleString("en-US", {style:"currency", currency:"USD"});
     }
@@ -218,7 +243,7 @@
     const groupByMonth = (rows) => {
       const m = {};
       rows.forEach(r => {
-        const mo = r["Month"];
+        const mo = r["Formatted Month"] || r["Month"];
         if (!mo) return;
         if (!m[mo]) m[mo] = [];
         m[mo].push(r);
@@ -226,7 +251,16 @@
       return m;
     };
 
-    const monthsSorted = (obj) => Object.keys(obj).sort();
+    const monthsSorted = (obj) => {
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      return Object.keys(obj).sort((a, b) => {
+        const [aMonth, aYear] = a.split(' ');
+        const [bMonth, bYear] = b.split(' ');
+        
+        if (aYear !== bYear) return aYear - bYear;
+        return monthNames.indexOf(aMonth) - monthNames.indexOf(bMonth);
+      });
+    };
 
     // Weighted average helper (weights by Active Customers)
     function weightedAvg(rows, valueKey, weightKey = "Active Customers") {
@@ -245,19 +279,25 @@
       renderArpuMonthly();
       renderEnergyMonthly();
       renderCustomersMonthly();
-      renderVendingRatioMonthly();
+      renderCustomerRatios();
+      renderConsumptionPerUser();
       renderTable();
     }
 
     function renderRevenueTrend() {
-      const monthly = {};
+      const monthlyData = {};
+      const plannedMonthlyData = {};
+      
       filteredData.forEach(r => {
         if (r["Site Name"] === "All sites") return;
-        const m = r["Month"];
-        monthly[m] = (monthly[m] || 0) + (r["Monthly Total (USD)"] || 0);
+        const m = r["Formatted Month"] || r["Month"];
+        monthlyData[m] = (monthlyData[m] || 0) + (r["Monthly Total (USD)"] || 0);
+        plannedMonthlyData[m] = (plannedMonthlyData[m] || 0) + (r["Planned Revenue (USD)"] || 0);
       });
-      const labels = Object.keys(monthly).sort();
-      const values = labels.map(k => monthly[k]);
+      
+      const labels = monthsSorted(monthlyData);
+      const values = labels.map(k => monthlyData[k]);
+      const plannedValues = labels.map(k => plannedMonthlyData[k]);
 
       const ctx = document.getElementById("revenueChart").getContext("2d");
       if (revenueChart) revenueChart.destroy();
@@ -265,20 +305,41 @@
         type: "line",
         data: { 
           labels, 
-          datasets: [{ 
-            label: "Monthly Revenue", 
-            data: values, 
-            fill: true,
-            borderColor: '#4e73df',
-            backgroundColor: 'rgba(78, 115, 223, 0.1)',
-            tension: 0.3
-          }] 
+          datasets: [
+            { 
+              label: "Actual Revenue", 
+              data: values, 
+              borderColor: '#4e73df',
+              backgroundColor: 'rgba(78, 115, 223, 0.1)',
+              fill: true,
+              tension: 0.3
+            },
+            { 
+              label: "Planned Revenue", 
+              data: plannedValues, 
+              borderColor: '#e74c3c',
+              backgroundColor: 'rgba(231, 76, 60, 0.1)',
+              borderDash: [5, 5],
+              fill: true,
+              tension: 0.3
+            }
+          ] 
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              title: {
+                display: true,
+                text: 'USD'
+              }
+            }
+          }
+        }
       });
     }
 
-    // NEW: Planned ARPU vs Actual ARPU by Month (weighted by Active Customers)
     function renderArpuMonthly() {
       const groups = groupByMonth(filteredData.filter(r => r["Site Name"] !== "All sites"));
       const labels = monthsSorted(groups);
@@ -288,27 +349,43 @@
       const ctx = document.getElementById("arpuChart").getContext("2d");
       if (arpuChart) arpuChart.destroy();
       arpuChart = new Chart(ctx, {
-        type: "bar",
+        type: "radar",
         data: {
           labels,
           datasets: [
             { 
               label: "Planned ARPU (USD)", 
               data: planned,
-              backgroundColor: '#3498db'
+              backgroundColor: 'rgba(52, 152, 219, 0.2)',
+              borderColor: 'rgba(52, 152, 219, 1)',
+              pointBackgroundColor: 'rgba(52, 152, 219, 1)',
+              pointBorderColor: '#fff',
             },
             { 
               label: "Actual ARPU (USD)", 
               data: actual,
-              backgroundColor: '#2ecc71'
+              backgroundColor: 'rgba(46, 204, 113, 0.2)',
+              borderColor: 'rgba(46, 204, 113, 1)',
+              pointBackgroundColor: 'rgba(46, 204, 113, 1)',
+              pointBorderColor: '#fff',
             }
           ]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              angleLines: {
+                display: true
+              },
+              suggestedMin: 0
+            }
+          }
+        }
       });
     }
 
-    // UPDATED: Energy — months on X-axis (sum across sites)
     function renderEnergyMonthly() {
       const groups = groupByMonth(filteredData.filter(r => r["Site Name"] !== "All sites"));
       const labels = monthsSorted(groups);
@@ -325,20 +402,30 @@
             { 
               label: "Planned kWh", 
               data: planned,
-              backgroundColor: '#3498db'
+              backgroundColor: 'rgba(52, 152, 219, 0.7)'
             },
             { 
               label: "Consumed kWh", 
               data: consumed,
-              backgroundColor: '#e74c3c'
+              backgroundColor: 'rgba(231, 76, 60, 0.7)'
             }
           ]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              title: {
+                display: true,
+                text: 'kWh'
+              }
+            }
+          }
+        }
       });
     }
 
-    // UPDATED: Customers — months on X-axis (sum across sites)
     function renderCustomersMonthly() {
       const groups = groupByMonth(filteredData.filter(r => r["Site Name"] !== "All sites"));
       const labels = monthsSorted(groups);
@@ -356,47 +443,75 @@
             { 
               label: "Active Customers", 
               data: active,
-              backgroundColor: '#3498db'
+              backgroundColor: 'rgba(52, 152, 219, 0.7)'
             },
             { 
               label: "Vending Customers", 
               data: vending,
-              backgroundColor: '#2ecc71'
+              backgroundColor: 'rgba(46, 204, 113, 0.7)'
             },
             { 
               label: "Total Customers", 
               data: total,
-              backgroundColor: '#e74c3c'
+              backgroundColor: 'rgba(231, 76, 60, 0.7)'
             }
           ]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              title: {
+                display: true,
+                text: 'Customers'
+              }
+            }
+          }
+        }
       });
     }
 
-    // NEW: Vending / Total share (months on X-axis)
-    function renderVendingRatioMonthly() {
+    function renderCustomerRatios() {
       const groups = groupByMonth(filteredData.filter(r => r["Site Name"] !== "All sites"));
       const labels = monthsSorted(groups);
-      const ratio = labels.map(m => {
+      
+      const vendingActiveRatio = labels.map(m => {
         const vend = groups[m].reduce((s, r) => s + (+r["Vending Customers"] || 0), 0);
-        const tot = groups[m].reduce((s, r) => s + (+r["Total Customers"] || 0), 0);
-        return tot ? (vend / tot) * 100 : 0;
+        const active = groups[m].reduce((s, r) => s + (+r["Active Customers"] || 0), 0);
+        return active ? (vend / active) * 100 : 0;
+      });
+      
+      const activeTotalRatio = labels.map(m => {
+        const active = groups[m].reduce((s, r) => s + (+r["Active Customers"] || 0), 0);
+        const total = groups[m].reduce((s, r) => s + (+r["Total Customers"] || 0), 0);
+        return total ? (active / total) * 100 : 0;
       });
 
-      const ctx = document.getElementById("vendingRatioChart").getContext("2d");
-      if (vendingRatioChart) vendingRatioChart.destroy();
-      vendingRatioChart = new Chart(ctx, {
+      const ctx = document.getElementById("customerRatiosChart").getContext("2d");
+      if (customerRatiosChart) customerRatiosChart.destroy();
+      customerRatiosChart = new Chart(ctx, {
         type: "line",
         data: {
           labels,
-          datasets: [{ 
-            label: "Vending / Total (%)", 
-            data: ratio, 
-            fill: false,
-            borderColor: '#9b59b6',
-            tension: 0.3
-          }]
+          datasets: [
+            { 
+              label: "Vending / Active (%)", 
+              data: vendingActiveRatio, 
+              borderColor: '#9b59b6',
+              backgroundColor: 'rgba(155, 89, 182, 0.1)',
+              fill: true,
+              tension: 0.3
+            },
+            { 
+              label: "Active / Total (%)", 
+              data: activeTotalRatio, 
+              borderColor: '#f39c12',
+              backgroundColor: 'rgba(243, 156, 18, 0.1)',
+              fill: true,
+              tension: 0.3
+            }
+          ]
         },
         options: {
           responsive: true,
@@ -412,28 +527,78 @@
       });
     }
 
+    function renderConsumptionPerUser() {
+      const groups = groupByMonth(filteredData.filter(r => r["Site Name"] !== "All sites"));
+      const labels = monthsSorted(groups);
+      
+      const consumptionData = labels.map(m => {
+        const totalConsumption = groups[m].reduce((s, r) => s + (+r["Consumed kWh"] || 0), 0);
+        const totalActive = groups[m].reduce((s, r) => s + (+r["Active Customers"] || 0), 0);
+        return totalActive ? totalConsumption / totalActive : 0;
+      });
+
+      const ctx = document.getElementById("consumptionChart").getContext("2d");
+      if (consumptionChart) consumptionChart.destroy();
+      consumptionChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            { 
+              label: "Consumption per User (kWh)", 
+              data: consumptionData,
+              backgroundColor: 'rgba(241, 196, 15, 0.7)',
+              borderColor: 'rgba(241, 196, 15, 1)',
+              borderWidth: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              title: {
+                display: true,
+                text: 'kWh per User'
+              }
+            }
+          }
+        }
+      });
+    }
+
     function renderTable() {
       if (!allData.length) return;
       const head = document.getElementById("tableHead");
       const body = document.getElementById("tableBody");
       head.innerHTML = ""; body.innerHTML = "";
 
-      const headers = Object.keys(allData[0]);
+      // Use original headers but replace Month with formatted month
+      const headers = Object.keys(allData[0]).filter(h => h !== "Formatted Month");
+      const displayHeaders = headers.map(h => h === "Month" ? "Formatted Month" : h);
+      
       const trh = document.createElement("tr");
-      headers.forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
+      displayHeaders.forEach(h => { 
+        const th = document.createElement("th"); 
+        th.textContent = h === "Formatted Month" ? "Month" : h; 
+        trh.appendChild(th); 
+      });
       head.appendChild(trh);
 
       filteredData.forEach(r => {
         const tr = document.createElement("tr");
         headers.forEach(h => {
           const td = document.createElement("td");
+          let value = h === "Month" ? r["Formatted Month"] || r[h] : r[h];
+          
           // Format numeric values
-          if (h.includes("USD") && typeof r[h] === "number") {
-            td.textContent = r[h].toLocaleString("en-US", {style:"currency", currency:"USD"});
-          } else if ((h.includes("kWh") || h.includes("Customers")) && typeof r[h] === "number") {
-            td.textContent = r[h].toLocaleString("en-US");
+          if (h.includes("USD") && typeof value === "number") {
+            td.textContent = value.toLocaleString("en-US", {style:"currency", currency:"USD"});
+          } else if ((h.includes("kWh") || h.includes("Customers")) && typeof value === "number") {
+            td.textContent = value.toLocaleString("en-US");
           } else {
-            td.textContent = r[h];
+            td.textContent = value;
           }
           tr.appendChild(td);
         });
@@ -456,7 +621,7 @@
 
     function initFilters() {
       const sites = [...new Set(allData.map(r => r["Site Name"]).filter(s => s && s !== "All sites"))].sort();
-      const months = [...new Set(allData.map(r => r["Month"]).filter(Boolean))].sort();
+      const months = [...new Set(allData.map(r => r["Formatted Month"] || r["Month"]).filter(Boolean))].sort();
       populateFilter("siteFilter", sites);
       populateFilter("monthFilter", months);
       document.getElementById("siteFilter").addEventListener("change", applyFilters);
@@ -485,6 +650,7 @@
       allData = [
         {
           "Month": "1/25/2025",
+          "Formatted Month": "Jan 2025",
           "Site Name": "Bugarula",
           "Monthly Total (USD)": 1222,
           "Planned Revenue (USD)": 1577,
@@ -501,6 +667,7 @@
         },
         {
           "Month": "2/25/2025",
+          "Formatted Month": "Feb 2025",
           "Site Name": "Bugarula",
           "Monthly Total (USD)": 828,
           "Planned Revenue (USD)": 1388,
@@ -517,6 +684,7 @@
         },
         {
           "Month": "3/25/2025",
+          "Formatted Month": "Mar 2025",
           "Site Name": "Bugarula",
           "Monthly Total (USD)": 945,
           "Planned Revenue (USD)": 1526,

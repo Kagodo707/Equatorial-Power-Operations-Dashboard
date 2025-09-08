@@ -7,6 +7,8 @@
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SheetJS for Excel export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
@@ -24,8 +26,14 @@
 
     /* Charts layout */
     .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 18px; }
-    .chart-container { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+    .chart-container { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.06); position: relative; }
     .chart-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; color: #374151; }
+    
+    /* Export buttons */
+    .export-buttons { display: flex; justify-content: flex-end; margin-bottom: 20px; gap: 10px; }
+    .export-btn { background: #2c3e50; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; }
+    .export-btn:hover { background: #1a2530; }
+    .chart-export { position: absolute; top: 10px; right: 10px; background: rgba(44, 62, 80, 0.8); color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 12px; }
 
     /* Constrain canvases to avoid vertical overflow */
     .chart-canvas {
@@ -43,6 +51,7 @@
     @media (max-width: 900px) {
       .charts-grid { grid-template-columns: 1fr; }
       .chart-canvas { height: 280px !important; }
+      .export-buttons { flex-direction: column; }
     }
   </style>
 </head>
@@ -59,6 +68,12 @@
         </select>
       </div>
     </header>
+
+    <div class="export-buttons">
+      <button class="export-btn" id="exportAllCharts">Export All Charts</button>
+      <button class="export-btn" id="exportTableCSV">Export Table as CSV</button>
+      <button class="export-btn" id="exportTableExcel">Export Table as Excel</button>
+    </div>
 
     <section class="summary">
       <div class="card total-revenue">
@@ -82,31 +97,37 @@
     <section class="charts-grid">
       <div class="chart-container">
         <div class="chart-title">Monthly Revenue vs Planned Revenue</div>
+        <button class="chart-export" data-chart="revenueChart">Download</button>
         <canvas id="revenueChart" class="chart-canvas"></canvas>
       </div>
 
       <div class="chart-container">
         <div class="chart-title">Planned ARPU vs Actual ARPU</div>
+        <button class="chart-export" data-chart="arpuChart">Download</button>
         <canvas id="arpuChart" class="chart-canvas"></canvas>
       </div>
 
       <div class="chart-container">
         <div class="chart-title">Planned vs Consumed Energy (kWh)</div>
+        <button class="chart-export" data-chart="energyChart">Download</button>
         <canvas id="energyChart" class="chart-canvas"></canvas>
       </div>
 
       <div class="chart-container">
         <div class="chart-title">Customer Distribution</div>
+        <button class="chart-export" data-chart="customersChart">Download</button>
         <canvas id="customersChart" class="chart-canvas"></canvas>
       </div>
 
       <div class="chart-container">
         <div class="chart-title">Customer Ratios</div>
+        <button class="chart-export" data-chart="customerRatiosChart">Download</button>
         <canvas id="customerRatiosChart" class="chart-canvas"></canvas>
       </div>
 
       <div class="chart-container">
         <div class="chart-title">Consumption per User (kWh)</div>
+        <button class="chart-export" data-chart="consumptionChart">Download</button>
         <canvas id="consumptionChart" class="chart-canvas"></canvas>
       </div>
     </section>
@@ -606,6 +627,109 @@
       });
     }
 
+    // ====== EXPORT FUNCTIONALITY ======
+    function downloadChart(chartId, fileName) {
+      const chart = getChartInstance(chartId);
+      if (!chart) return;
+      
+      const link = document.createElement('a');
+      link.href = chart.toBase64Image();
+      link.download = fileName || `${chartId}_${new Date().toISOString().slice(0, 10)}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function getChartInstance(chartId) {
+      switch(chartId) {
+        case 'revenueChart': return revenueChart;
+        case 'arpuChart': return arpuChart;
+        case 'energyChart': return energyChart;
+        case 'customersChart': return customersChart;
+        case 'customerRatiosChart': return customerRatiosChart;
+        case 'consumptionChart': return consumptionChart;
+        default: return null;
+      }
+    }
+
+    function exportTableToCSV() {
+      if (!filteredData.length) return;
+      
+      const headers = Object.keys(allData[0]).filter(h => h !== "Formatted Month");
+      const displayHeaders = headers.map(h => h === "Month" ? "Formatted Month" : h);
+      
+      let csvContent = displayHeaders.map(h => h === "Formatted Month" ? "Month" : h).join(',') + '\n';
+      
+      filteredData.forEach(row => {
+        const csvRow = headers.map(h => {
+          let value = h === "Month" ? row["Formatted Month"] || row[h] : row[h];
+          
+          // Format for CSV
+          if (typeof value === 'string' && value.includes(',')) {
+            value = `"${value}"`;
+          }
+          return value;
+        }).join(',');
+        csvContent += csvRow + '\n';
+      });
+      
+      const link = document.createElement('a');
+      link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+      link.download = `dashboard_data_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function exportTableToExcel() {
+      if (!filteredData.length) return;
+      
+      const headers = Object.keys(allData[0]).filter(h => h !== "Formatted Month");
+      const data = filteredData.map(row => {
+        const newRow = {};
+        headers.forEach(h => {
+          newRow[h === "Month" ? "Month" : h] = h === "Month" ? row["Formatted Month"] || row[h] : row[h];
+        });
+        return newRow;
+      });
+      
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Dashboard Data");
+      XLSX.writeFile(workbook, `dashboard_data_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    }
+
+    function exportAllCharts() {
+      const chartIds = ['revenueChart', 'arpuChart', 'energyChart', 'customersChart', 'customerRatiosChart', 'consumptionChart'];
+      
+      // Create a zip file containing all charts
+      alert("Preparing download for all charts...");
+      
+      // Download each chart individually (for simplicity)
+      setTimeout(() => {
+        chartIds.forEach(id => {
+          downloadChart(id, `equatorial_power_${id}.png`);
+        });
+      }, 500);
+    }
+
+    function setupExportListeners() {
+      // Individual chart exports
+      document.querySelectorAll('.chart-export').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const chartId = e.target.getAttribute('data-chart');
+          downloadChart(chartId);
+        });
+      });
+      
+      // Table exports
+      document.getElementById('exportTableCSV').addEventListener('click', exportTableToCSV);
+      document.getElementById('exportTableExcel').addEventListener('click', exportTableToExcel);
+      
+      // All charts export
+      document.getElementById('exportAllCharts').addEventListener('click', exportAllCharts);
+    }
+
     function applyFilters() {
       const siteSel = document.getElementById("siteFilter").value;
       const monthSel = document.getElementById("monthFilter").value;
@@ -637,6 +761,7 @@
         filteredData = [...allData];
         initFilters();
         processDataAndRender();
+        setupExportListeners();
       } catch (err) {
         console.error(err);
         // Fallback to sample data if CSV loading fails
@@ -703,6 +828,7 @@
       filteredData = [...allData];
       initFilters();
       processDataAndRender();
+      setupExportListeners();
     }
 
     // Kickoff

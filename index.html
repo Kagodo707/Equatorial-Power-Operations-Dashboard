@@ -51,6 +51,12 @@
       width: 100%;
     }
 
+    /* (4) Make options readable in the open dropdown list */
+    .controls select option {
+      color: #0b2b22;        /* dark text */
+      background: #ffffff;   /* white background */
+    }
+
     .date-range { display: flex; gap: 8px; align-items: center; }
     .date-range span { white-space: nowrap; color: #e5e7eb; font-weight: 600; }
 
@@ -63,6 +69,9 @@
       padding: 16px; border-radius: 14px;
       box-shadow: 0 6px 20px rgba(0,0,0,.25);
       border: 1px solid rgba(255,255,255,.12);
+
+      /* (1) Center contents in cards */
+      display: flex; flex-direction: column; align-items: center; text-align: center;
     }
     .card h3 { font-size: 13px; color: #cbd5e1; margin-bottom: 8px; }
     .card .big { font-size: 26px; font-weight: 800; color: #fff; }
@@ -74,7 +83,9 @@
       box-shadow: 0 6px 22px rgba(0,0,0,.28);
       position: relative; border: 1px solid rgba(255,255,255,.08);
     }
-    .chart-title { font-size: 16px; font-weight: 700; margin-bottom: 10px; color: #f8fafc; }
+
+    /* (2) Center chart titles */
+    .chart-title { font-size: 16px; font-weight: 700; margin-bottom: 10px; color: #f8fafc; text-align: center; }
 
     .export-buttons { display: flex; justify-content: flex-end; margin-bottom: 20px; gap: 10px; }
     .export-btn {
@@ -245,10 +256,8 @@
       return `${monthNames[month]} ${year}`;
     }
 
-    // Parse "Month" into a Date at first of month.
     function parseMonthToDate(monthStr) {
       if (!monthStr) return new Date(NaN);
-      // Accept "M/D/YYYY" or "MM/DD/YYYY"
       if (monthStr.includes('/')) {
         const p = monthStr.split('/');
         if (p.length >= 2) {
@@ -257,7 +266,6 @@
           return new Date(y, m, 1);
         }
       }
-      // Accept "MMM YYYY"
       const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
       const parts = monthStr.split(' ');
       if (parts.length >= 2) {
@@ -387,8 +395,10 @@
       return {
         responsive: true,
         maintainAspectRatio: false,
+        /* (3) Lift legend clear of data labels/bars */
+        layout: { padding: { top: 28 } },
         plugins: {
-          legend: { labels: { color: '#e5e7eb' } },
+          legend: { position: 'top', labels: { color: '#e5e7eb' } },
           datalabels: {
             color: '#ffffff',
             backgroundColor: 'rgba(0,0,0,.35)',
@@ -419,7 +429,10 @@
           y: {
             title: { display: !!yTitle, text: yTitle, color: '#cbd5e1' },
             ticks: { color: '#cbd5e1', callback: (v) => isPercent ? `${v}%` : v },
-            grid: { color: 'rgba(255,255,255,.06)' }
+            grid: { color: 'rgba(255,255,255,.06)' },
+            /* Extra headroom above max so legend never overlaps */
+            grace: isPercent ? '5%' : '12%',
+            ...(isPercent ? { suggestedMax: 105 } : {})
           }
         }
       };

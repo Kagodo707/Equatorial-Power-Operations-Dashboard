@@ -50,6 +50,22 @@
       outline: none;
       width: 100%;
     }
+    .refresh-btn {
+      padding: 9px 12px;
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 8px;
+      background: rgba(255,255,255,.12);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .refresh-btn:disabled { cursor: wait; opacity: .65; }
+    .data-status {
+      grid-column: 1 / -1;
+      color: #cbd5e1;
+      font-size: 12px;
+      text-align: right;
+    }
 
     /* (4) Make options readable in the open dropdown list */
     .controls select option {
@@ -127,12 +143,14 @@
         </select>
         <div class="date-range">
           <span>From:</span>
-          <input type="month" id="startDateFilter" value="2025-02">
+          <input type="month" id="startDateFilter">
         </div>
         <div class="date-range">
           <span>To:</span>
-          <input type="month" id="endDateFilter" value="2025-06">
+          <input type="month" id="endDateFilter">
         </div>
+        <button class="refresh-btn" id="refreshData" type="button">Refresh data</button>
+        <div class="data-status" id="dataStatus" role="status" aria-live="polite">Loading live data...</div>
       </div>
     </header>
 
@@ -214,6 +232,7 @@
     // ====== CONFIG: Google Sheet CSV ======
     const CSV_URL =
       "https://docs.google.com/spreadsheets/d/1Jl32qnvVwJKd7QduBCiMchIxZtbzHUTHOrKM2YWPdJw/export?format=csv&gid=1837089544";
+    const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
     Chart.register(ChartDataLabels);
 
@@ -221,6 +240,8 @@
     let allData = [];
     let filteredData = [];
     let revenueChart, arpuChart, energyChart, customersChart, customerRatiosChart, consumptionChart;
+    let isLoading = false;
+    let lastRefreshAt = 0;
 
     // ====== COLOR PALETTES ======
     const palettes = [
@@ -253,18 +274,18 @@
 
     function formatMonth(dateStr) {
       if (!dateStr) return "";
-      const parts = dateStr.split('/');
-      if (parts.length < 2) return dateStr;
       const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      const month = parseInt(parts[0], 10) - 1;
-      const year = parts[2] || "2025";
-      return `${monthNames[month]} ${year}`;
+      const date = parseMonthToDate(dateStr);
+      return isNaN(date) ? String(dateStr) : `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
     }
 
     function parseMonthToDate(monthStr) {
       if (!monthStr) return new Date(NaN);
-      if (monthStr.includes('/')) {
-        const p = monthStr.split('/');
+      const value = String(monthStr).trim();
+      const isoMatch = value.match(/^(\d{4})-(\d{1,2})(?:-\d{1,2})?$/);
+      if (isoMatch) return new Date(parseInt(isoMatch[1], 10), parseInt(isoMatch[2], 10) - 1, 1);
+      if (value.includes('/')) {
+        const p = value.split('/');
         if (p.length >= 2) {
           const m = parseInt(p[0], 10) - 1;
           const y = parseInt(p[2] || p[1], 10);
@@ -272,7 +293,7 @@
         }
       }
       const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      const parts = monthStr.split(' ');
+      const parts = value.split(/\s+/);
       if (parts.length >= 2) {
         const idx = months.findIndex(s => s.toLowerCase() === parts[0].toLowerCase());
         const y = parseInt(parts[1], 10);
@@ -286,6 +307,7 @@
       return `${y}-${m}`;
     }
     function clampDateToBounds(d, minD, maxD) {
+      if (!(d instanceof Date) || isNaN(d)) return new Date(minD);
       if (d < minD) return new Date(minD);
       if (d > maxD) return new Date(maxD);
       return d;
@@ -358,7 +380,7 @@
       const maxCustomers = siteRows.reduce((max, r) => Math.max(max, r["Active Customers"] || 0), 0);
       const arpus = siteRows.map(r => r["ARPU (USD)"]).filter(Number.isFinite);
       const avgARPU = arpus.length ? arpus.reduce((s, x) => s + x, 0) / arpus.length : 0;
-      
+
       // NEW: Calculate average consumption per user
       const totalConsumption = siteRows.reduce((s, r) => s + (r["Consumed kWh"] || 0), 0);
       const totalActiveCustomers = siteRows.reduce((s, r) => s + (r["Active Customers"] || 0), 0);
@@ -455,50 +477,7 @@
       renderRevenueTrend();
       renderArpuMonthly();
       renderEnergyMonthly();
-      renderCustomersMonthly();
-      renderCustomerRatios();
-      renderConsumptionPerUser();
-      renderTable();
-    }
-
-    function renderRevenueTrend() {
-      const pal = palettes[0];
-      const monthlyData = {};
-      const plannedMonthlyData = {};
-      filteredData.forEach(r => {
-        if (r["Site Name"] === "All sites") return;
-        const m = r["Formatted Month"] || r["Month"];
-        monthlyData[m] = (monthlyData[m] || 0) + (r["Monthly Total (USD)"] || 0);
-        plannedMonthlyData[m] = (plannedMonthlyData[m] || 0) + (r["Planned Revenue (USD)"] || 0);
-      });
-      const labels = monthsSorted(monthlyData);
-      const values = labels.map(k => monthlyData[k]);
-      const plannedValues = labels.map(k => plannedMonthlyData[k]);
-
-      const ctx = document.getElementById("revenueChart").getContext("2d");
-      if (revenueChart) revenueChart.destroy();
-      revenueChart = new Chart(ctx, {
-        type: "line",
-        data: { labels,
-          datasets: [
-            { label: "Actual Revenue", data: values, borderColor: pal.primary, backgroundColor: pal.fillA, fill: true, tension: 0.35 },
-            { label: "Planned Revenue", data: plannedValues, borderColor: pal.accent, backgroundColor: pal.fillB, borderDash: [6, 6], fill: true, tension: 0.35 }
-          ]
-        },
-        options: makeCommonOptions({ yTitle: 'USD' })
-      });
-    }
-
-    function renderArpuMonthly() {
-      const pal = palettes[1];
-      const groups = groupByMonth(filteredData.filter(r => r["Site Name"] !== "All sites"));
-      const labels = monthsSorted(groups);
-      const planned = labels.map(m => weightedAvg(groups[m], "Planned ARPU (USD)"));
-      const actual  = labels.map(m => weightedAvg(groups[m], "ARPU (USD)"));
-
-      const ctx = document.getElementById("arpuChart").getContext("2d");
-      if (arpuChart) arpuChart.destroy();
-      arpuChart = new Chart(ctx, {
+      renderCustomersMonthly…470 tokens truncated…    arpuChart = new Chart(ctx, {
         type: "bar",
         data: { labels,
           datasets: [
@@ -710,6 +689,12 @@
       document.getElementById('exportAllCharts').addEventListener('click', exportAllCharts);
     }
 
+    function updateDataStatus(message, isError = false) {
+      const status = document.getElementById("dataStatus");
+      status.textContent = message;
+      status.style.color = isError ? "#fca5a5" : "#cbd5e1";
+    }
+
     // ====== SYNCED FILTERS (Site <-> Date range) ======
     function getDateBoundsForSite(siteVal) {
       const rows = allData.filter(r => (siteVal === "__ALL__") || (r["Site Name"] === siteVal));
@@ -807,12 +792,14 @@
       processDataAndRender();
     }
 
-    // ====== INIT ======
-    function initFilters() {
+    // ====== INIT AND LIVE REFRESH ======
+    function updateFilterBounds({ useFullRange = false, followLatest = false } = {}) {
       const sites = [...new Set(allData.map(r => r["Site Name"]).filter(s => s && s !== "All sites"))].sort();
+      const siteEl = document.getElementById("siteFilter");
+      const previousSite = siteEl.value;
       populateFilter("siteFilter", sites);
+      if ([...siteEl.options].some(o => o.value === previousSite)) siteEl.value = previousSite;
 
-      // Set initial overall bounds on date pickers
       const overall = getDateBoundsForSite("__ALL__");
       if (overall) {
         const startEl = document.getElementById("startDateFilter");
@@ -822,36 +809,68 @@
         endEl.min   = toMonthInputValue(overall.min);
         endEl.max   = toMonthInputValue(overall.max);
 
-        // Clamp initial values into available range
-        let s = new Date(startEl.value + "-01");
-        let e = new Date(endEl.value + "-01");
+        let s = useFullRange || !startEl.value ? new Date(overall.min) : new Date(startEl.value + "-01");
+        let e = useFullRange || !endEl.value ? new Date(overall.max) : new Date(endEl.value + "-01");
         s = clampDateToBounds(s, overall.min, overall.max);
-        e = clampDateToBounds(e, overall.min, overall.max);
+        e = followLatest ? new Date(overall.max) : clampDateToBounds(e, overall.min, overall.max);
         if (s > e) e = new Date(s);
         startEl.value = toMonthInputValue(s);
         endEl.value   = toMonthInputValue(e);
       }
+    }
 
-      // Two-way sync listeners
+    function setupListeners() {
       document.getElementById("siteFilter").addEventListener("change", syncOnSiteChange);
       document.getElementById("startDateFilter").addEventListener("change", syncOnDateChange);
       document.getElementById("endDateFilter").addEventListener("change", syncOnDateChange);
+      document.getElementById("refreshData").addEventListener("click", () => loadData({ silent: true }));
+      setupExportListeners();
     }
 
-    async function loadData() {
+    function setupAutoRefresh() {
+      window.setInterval(() => loadData({ silent: true }), REFRESH_INTERVAL_MS);
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && Date.now() - lastRefreshAt > 60 * 1000) loadData({ silent: true });
+      });
+    }
+
+    async function loadData({ initial = false, silent = false } = {}) {
+      if (isLoading) return;
+      isLoading = true;
+      const refreshButton = document.getElementById("refreshData");
+      refreshButton.disabled = true;
+      if (!silent) updateDataStatus("Loading live data...");
+
+      const previousBounds = getDateBoundsForSite("__ALL__");
+      const currentEnd = document.getElementById("endDateFilter").value;
+      const wasFollowingLatest = !previousBounds || currentEnd === toMonthInputValue(previousBounds.max);
+
       try {
-        const resp = await fetch(CSV_URL, { cache: "no-store" });
+        const liveUrl = new URL(CSV_URL);
+        liveUrl.searchParams.set("_", Date.now().toString());
+        const resp = await fetch(liveUrl.toString(), { cache: "no-store" });
         if (!resp.ok) throw new Error("Failed to load CSV: " + resp.status);
         const csv = await resp.text();
-        allData = parseCSV(csv);
+        const parsedData = parseCSV(csv);
+        if (!parsedData.length) throw new Error("The live CSV did not contain any data rows.");
+        allData = parsedData;
         filteredData = [...allData];
-        initFilters();
-        applyFilters();  // ensure initial render respects bounds & selections
-        setupExportListeners();
+        updateFilterBounds({ useFullRange: initial || !previousBounds, followLatest: wasFollowingLatest });
+        applyFilters();
+        lastRefreshAt = Date.now();
+        const latest = getDateBoundsForSite("__ALL__");
+        const latestLabel = latest ? latest.max.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "unknown";
+        updateDataStatus(`Live data refreshed ${new Date(lastRefreshAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}. Latest month: ${latestLabel}.`);
       } catch (err) {
         console.error(err);
-        alert("Failed to load live data. Using sample data instead.");
-        loadSampleData();
+        updateDataStatus("Live refresh failed. The last successfully loaded data is still displayed.", true);
+        if (!allData.length) {
+          alert("Failed to load live data. Using sample data instead.");
+          loadSampleData();
+        }
+      } finally {
+        isLoading = false;
+        refreshButton.disabled = false;
       }
     }
 
@@ -862,13 +881,14 @@
         {"Month":"3/25/2025","Formatted Month":"Mar 2025","Month Date":new Date(2025,2,1),"Site Name":"Bugarula","Monthly Total (USD)":945,"Planned Revenue (USD)":1526,"Planned ARPU (USD)":5.8,"ARPU (USD)":3.6,"Planned kWh":1987,"Consumed kWh":1574,"Consumption per user":6.0,"Vending Customers":232,"Active Customers":263,"Total Customers":296,"Vending/Total":"78.38%","Subscriptions":""}
       ];
       filteredData = [...allData];
-      initFilters();
+      updateFilterBounds({ useFullRange: true });
       applyFilters();
-      setupExportListeners();
     }
 
     // Kickoff
-    loadData().catch(err => {
+    setupListeners();
+    setupAutoRefresh();
+    loadData({ initial: true }).catch(err => {
       console.error(err);
       alert("Failed to load dashboard data. Please ensure the Google Sheet is shared or published for CSV access.");
     });

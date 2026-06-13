@@ -22,7 +22,9 @@ This dashboard uses actual purchase data from multiple sites, including:
 - Mugote
 - Lolwe
 
-The data includes monthly metrics from January to September 2025.
+The dashboard reads the published `Dashboard` tab in the connected Google Sheet at runtime. The available date range is derived from the sheet, so newly added months appear without changing the HTML.
+
+The page refreshes the live CSV every five minutes and whenever an inactive tab becomes visible again. A manual **Refresh data** button is also available.
 
 ## Technologies Used
 
@@ -34,7 +36,7 @@ The data includes monthly metrics from January to September 2025.
 ## How to Use
 
 1. Use the site filter to focus on specific locations
-2. Select a month to view data for a particular time period
+2. Select a date range to view a particular reporting period; the initial range automatically ends at the latest available month
 3. Choose different metrics to visualize from the dropdown
 4. Hover over charts to see detailed values
 5. Scroll down to view the complete data table

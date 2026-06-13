@@ -477,7 +477,50 @@
       renderRevenueTrend();
       renderArpuMonthly();
       renderEnergyMonthly();
-      renderCustomersMonthly…470 tokens truncated…    arpuChart = new Chart(ctx, {
+      renderCustomersMonthly();
+      renderCustomerRatios();
+      renderConsumptionPerUser();
+      renderTable();
+    }
+
+    function renderRevenueTrend() {
+      const pal = palettes[0];
+      const monthlyData = {};
+      const plannedMonthlyData = {};
+      filteredData.forEach(r => {
+        if (r["Site Name"] === "All sites") return;
+        const m = r["Formatted Month"] || r["Month"];
+        monthlyData[m] = (monthlyData[m] || 0) + (r["Monthly Total (USD)"] || 0);
+        plannedMonthlyData[m] = (plannedMonthlyData[m] || 0) + (r["Planned Revenue (USD)"] || 0);
+      });
+      const labels = monthsSorted(monthlyData);
+      const values = labels.map(k => monthlyData[k]);
+      const plannedValues = labels.map(k => plannedMonthlyData[k]);
+
+      const ctx = document.getElementById("revenueChart").getContext("2d");
+      if (revenueChart) revenueChart.destroy();
+      revenueChart = new Chart(ctx, {
+        type: "line",
+        data: { labels,
+          datasets: [
+            { label: "Actual Revenue", data: values, borderColor: pal.primary, backgroundColor: pal.fillA, fill: true, tension: 0.35 },
+            { label: "Planned Revenue", data: plannedValues, borderColor: pal.accent, backgroundColor: pal.fillB, borderDash: [6, 6], fill: true, tension: 0.35 }
+          ]
+        },
+        options: makeCommonOptions({ yTitle: 'USD' })
+      });
+    }
+
+    function renderArpuMonthly() {
+      const pal = palettes[1];
+      const groups = groupByMonth(filteredData.filter(r => r["Site Name"] !== "All sites"));
+      const labels = monthsSorted(groups);
+      const planned = labels.map(m => weightedAvg(groups[m], "Planned ARPU (USD)"));
+      const actual  = labels.map(m => weightedAvg(groups[m], "ARPU (USD)"));
+
+      const ctx = document.getElementById("arpuChart").getContext("2d");
+      if (arpuChart) arpuChart.destroy();
+      arpuChart = new Chart(ctx, {
         type: "bar",
         data: { labels,
           datasets: [

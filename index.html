@@ -11,6 +11,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <!-- SheetJS for Excel export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- jsPDF for chart-as-PDF export -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
@@ -110,12 +112,25 @@
       box-shadow: 0 8px 20px rgba(34,197,94,.25);
     }
     .export-btn:hover { filter: brightness(1.08); }
+    .chart-export-wrap { position: absolute; top: 10px; right: 10px; z-index: 3; }
     .chart-export {
-      position: absolute; top: 10px; right: 10px;
       background: rgba(255,255,255,.12); color: #fff; border: none;
       padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 12px;
     }
     .chart-export:hover { background: rgba(255,255,255,.18); }
+    .chart-menu {
+      position: absolute; top: calc(100% + 4px); right: 0;
+      background: #111827; border: 1px solid rgba(255,255,255,.14);
+      border-radius: 8px; padding: 4px; min-width: 150px;
+      box-shadow: 0 10px 26px rgba(0,0,0,.4);
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .chart-menu button {
+      background: transparent; color: #e5e7eb; border: none;
+      text-align: left; padding: 7px 8px; border-radius: 6px;
+      cursor: pointer; font-size: 12.5px;
+    }
+    .chart-menu button:hover { background: rgba(255,255,255,.1); }
 
     .chart-canvas { width: 100% !important; max-width: 100%; height: 320px !important; display: block; }
 
@@ -187,37 +202,85 @@
     <section class="charts-grid">
       <div class="chart-container">
         <div class="chart-title">Monthly Revenue vs Planned Revenue</div>
-        <button class="chart-export" data-chart="revenueChart">Download</button>
+        <div class="chart-export-wrap" data-chart="revenueChart">
+          <button class="chart-export" type="button">Download ▾</button>
+          <div class="chart-menu" role="menu" hidden>
+            <button data-action="png" type="button">Chart as PNG</button>
+            <button data-action="jpg" type="button">Chart as JPG</button>
+            <button data-action="pdf" type="button">Chart as PDF</button>
+            <button data-action="csv" type="button">Chart data (CSV)</button>
+          </div>
+        </div>
         <canvas id="revenueChart" class="chart-canvas"></canvas>
       </div>
 
       <div class="chart-container">
         <div class="chart-title">Planned ARPU vs Actual ARPU</div>
-        <button class="chart-export" data-chart="arpuChart">Download</button>
+        <div class="chart-export-wrap" data-chart="arpuChart">
+          <button class="chart-export" type="button">Download ▾</button>
+          <div class="chart-menu" role="menu" hidden>
+            <button data-action="png" type="button">Chart as PNG</button>
+            <button data-action="jpg" type="button">Chart as JPG</button>
+            <button data-action="pdf" type="button">Chart as PDF</button>
+            <button data-action="csv" type="button">Chart data (CSV)</button>
+          </div>
+        </div>
         <canvas id="arpuChart" class="chart-canvas"></canvas>
       </div>
 
       <div class="chart-container">
         <div class="chart-title">Planned vs Consumed Energy (kWh)</div>
-        <button class="chart-export" data-chart="energyChart">Download</button>
+        <div class="chart-export-wrap" data-chart="energyChart">
+          <button class="chart-export" type="button">Download ▾</button>
+          <div class="chart-menu" role="menu" hidden>
+            <button data-action="png" type="button">Chart as PNG</button>
+            <button data-action="jpg" type="button">Chart as JPG</button>
+            <button data-action="pdf" type="button">Chart as PDF</button>
+            <button data-action="csv" type="button">Chart data (CSV)</button>
+          </div>
+        </div>
         <canvas id="energyChart" class="chart-canvas"></canvas>
       </div>
 
       <div class="chart-container">
         <div class="chart-title">Customer Distribution</div>
-        <button class="chart-export" data-chart="customersChart">Download</button>
+        <div class="chart-export-wrap" data-chart="customersChart">
+          <button class="chart-export" type="button">Download ▾</button>
+          <div class="chart-menu" role="menu" hidden>
+            <button data-action="png" type="button">Chart as PNG</button>
+            <button data-action="jpg" type="button">Chart as JPG</button>
+            <button data-action="pdf" type="button">Chart as PDF</button>
+            <button data-action="csv" type="button">Chart data (CSV)</button>
+          </div>
+        </div>
         <canvas id="customersChart" class="chart-canvas"></canvas>
       </div>
 
       <div class="chart-container">
         <div class="chart-title">Customer Ratios</div>
-        <button class="chart-export" data-chart="customerRatiosChart">Download</button>
+        <div class="chart-export-wrap" data-chart="customerRatiosChart">
+          <button class="chart-export" type="button">Download ▾</button>
+          <div class="chart-menu" role="menu" hidden>
+            <button data-action="png" type="button">Chart as PNG</button>
+            <button data-action="jpg" type="button">Chart as JPG</button>
+            <button data-action="pdf" type="button">Chart as PDF</button>
+            <button data-action="csv" type="button">Chart data (CSV)</button>
+          </div>
+        </div>
         <canvas id="customerRatiosChart" class="chart-canvas"></canvas>
       </div>
 
       <div class="chart-container">
         <div class="chart-title">Consumption per User (kWh)</div>
-        <button class="chart-export" data-chart="consumptionChart">Download</button>
+        <div class="chart-export-wrap" data-chart="consumptionChart">
+          <button class="chart-export" type="button">Download ▾</button>
+          <div class="chart-menu" role="menu" hidden>
+            <button data-action="png" type="button">Chart as PNG</button>
+            <button data-action="jpg" type="button">Chart as JPG</button>
+            <button data-action="pdf" type="button">Chart as PDF</button>
+            <button data-action="csv" type="button">Chart data (CSV)</button>
+          </div>
+        </div>
         <canvas id="consumptionChart" class="chart-canvas"></canvas>
       </div>
     </section>
@@ -242,6 +305,14 @@
     let revenueChart, arpuChart, energyChart, customersChart, customerRatiosChart, consumptionChart;
     let isLoading = false;
     let lastRefreshAt = 0;
+    // Per-chart {headers, rows} snapshot, refreshed on every render, used by the CSV export.
+    const chartTableCache = {};
+    function cacheChartTable(chartId, labelHeader, labels, series) {
+      chartTableCache[chartId] = {
+        headers: [labelHeader, ...series.map(s => s.label)],
+        rows: labels.map((lab, i) => [lab, ...series.map(s => s.data[i])])
+      };
+    }
 
     // ====== COLOR PALETTES ======
     const palettes = [
@@ -496,6 +567,10 @@
       const labels = monthsSorted(monthlyData);
       const values = labels.map(k => monthlyData[k]);
       const plannedValues = labels.map(k => plannedMonthlyData[k]);
+      cacheChartTable("revenueChart", "Month", labels, [
+        { label: "Actual Revenue (USD)", data: values },
+        { label: "Planned Revenue (USD)", data: plannedValues }
+      ]);
 
       const ctx = document.getElementById("revenueChart").getContext("2d");
       if (revenueChart) revenueChart.destroy();
@@ -517,6 +592,10 @@
       const labels = monthsSorted(groups);
       const planned = labels.map(m => weightedAvg(groups[m], "Planned ARPU (USD)"));
       const actual  = labels.map(m => weightedAvg(groups[m], "ARPU (USD)"));
+      cacheChartTable("arpuChart", "Month", labels, [
+        { label: "Actual ARPU (USD)", data: actual },
+        { label: "Planned ARPU (USD)", data: planned }
+      ]);
 
       const ctx = document.getElementById("arpuChart").getContext("2d");
       if (arpuChart) arpuChart.destroy();
@@ -538,6 +617,10 @@
       const labels = monthsSorted(groups);
       const planned = labels.map(m => groups[m].reduce((s, r) => s + (+r["Planned kWh"] || 0), 0));
       const consumed = labels.map(m => groups[m].reduce((s, r) => s + (+r["Consumed kWh"] || 0), 0));
+      cacheChartTable("energyChart", "Month", labels, [
+        { label: "Planned kWh", data: planned },
+        { label: "Consumed kWh", data: consumed }
+      ]);
 
       const ctx = document.getElementById("energyChart").getContext("2d");
       if (energyChart) energyChart.destroy();
@@ -560,6 +643,11 @@
       const active = labels.map(m => groups[m].reduce((s, r) => s + (+r["Active Customers"] || 0), 0));
       const vending = labels.map(m => groups[m].reduce((s, r) => s + (+r["Vending Customers"] || 0), 0));
       const total = labels.map(m => groups[m].reduce((s, r) => s + (+r["Total Customers"] || 0), 0));
+      cacheChartTable("customersChart", "Month", labels, [
+        { label: "Active Customers", data: active },
+        { label: "Vending Customers", data: vending },
+        { label: "Total Customers", data: total }
+      ]);
 
       const ctx = document.getElementById("customersChart").getContext("2d");
       if (customersChart) customersChart.destroy();
@@ -592,6 +680,10 @@
         const total = groups[m].reduce((s, r) => s + (+r["Total Customers"] || 0), 0);
         return total ? (active / total) * 100 : 0;
       });
+      cacheChartTable("customerRatiosChart", "Month", labels, [
+        { label: "Vending / Active (%)", data: vendingActiveRatio },
+        { label: "Active / Total (%)", data: activeTotalRatio }
+      ]);
 
       const ctx = document.getElementById("customerRatiosChart").getContext("2d");
       if (customerRatiosChart) customerRatiosChart.destroy();
@@ -616,6 +708,9 @@
         const totalActive = groups[m].reduce((s, r) => s + (+r["Active Customers"] || 0), 0);
         return totalActive ? totalConsumption / totalActive : 0;
       });
+      cacheChartTable("consumptionChart", "Month", labels, [
+        { label: "Consumption per User (kWh)", data: consumptionData }
+      ]);
 
       const ctx = document.getElementById("consumptionChart").getContext("2d");
       if (consumptionChart) consumptionChart.destroy();
@@ -663,16 +758,61 @@
       });
     }
 
-    // ====== EXPORTS (unchanged) ======
-    function downloadChart(chartId, fileName) {
-      const chart = getChartInstance(chartId);
-      if (!chart) return;
+    // ====== EXPORTS ======
+    function triggerDownload(href, fileName) {
       const link = document.createElement('a');
-      link.href = chart.toBase64Image();
-      link.download = fileName || `${chartId}_${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = href;
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+    }
+    function downloadChart(chartId, fileName) {
+      const chart = getChartInstance(chartId);
+      if (!chart) return;
+      triggerDownload(chart.toBase64Image(), fileName || `${chartId}_${new Date().toISOString().slice(0, 10)}.png`);
+    }
+    function downloadChartAsJPG(chartId, fileName) {
+      const chart = getChartInstance(chartId);
+      if (!chart) return;
+      // Flatten onto a white background first — JPG has no alpha channel and the
+      // chart canvas is otherwise transparent, which would render as black.
+      const src = chart.canvas;
+      const flat = document.createElement('canvas');
+      flat.width = src.width; flat.height = src.height;
+      const fctx = flat.getContext('2d');
+      fctx.fillStyle = '#0b1220';
+      fctx.fillRect(0, 0, flat.width, flat.height);
+      fctx.drawImage(src, 0, 0);
+      triggerDownload(flat.toDataURL('image/jpeg', 0.95), fileName || `${chartId}_${new Date().toISOString().slice(0, 10)}.jpg`);
+    }
+    function downloadChartAsPDF(chartId, fileName) {
+      const chart = getChartInstance(chartId);
+      if (!chart || !window.jspdf) return;
+      const { jsPDF } = window.jspdf;
+      const imgData = chart.toBase64Image('image/png', 1);
+      const pxW = chart.canvas.width, pxH = chart.canvas.height;
+      const orientation = pxW >= pxH ? 'landscape' : 'portrait';
+      const doc = new jsPDF({ orientation, unit: 'pt', format: 'a4' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const margin = 24;
+      const maxW = pageW - margin * 2, maxH = pageH - margin * 2;
+      const scale = Math.min(maxW / pxW, maxH / pxH);
+      const w = pxW * scale, h = pxH * scale;
+      doc.setFillColor(11, 18, 32);
+      doc.rect(0, 0, pageW, pageH, 'F');
+      doc.addImage(imgData, 'PNG', (pageW - w) / 2, (pageH - h) / 2, w, h);
+      doc.save(fileName || `${chartId}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    }
+    function downloadChartDataCSV(chartId, fileName) {
+      const table = chartTableCache[chartId];
+      if (!table) return;
+      let csv = table.headers.join(',') + '\n';
+      table.rows.forEach(row => {
+        csv += row.map(v => (typeof v === 'number' ? (Number.isInteger(v) ? v : v.toFixed(2)) : v)).join(',') + '\n';
+      });
+      triggerDownload('data:text/csv;charset=utf-8,' + encodeURIComponent(csv), fileName || `${chartId}_data_${new Date().toISOString().slice(0, 10)}.csv`);
     }
     function getChartInstance(chartId) {
       switch(chartId) {
@@ -723,10 +863,35 @@
       alert("Preparing download for all charts...");
       setTimeout(() => { chartIds.forEach(id => downloadChart(id, `equatorial_power_${id}.png`)); }, 500);
     }
+    function closeAllChartMenus(exceptEl) {
+      document.querySelectorAll('.chart-menu').forEach(m => { if (m !== exceptEl) m.hidden = true; });
+    }
     function setupExportListeners() {
-      document.querySelectorAll('.chart-export').forEach(btn => {
-        btn.addEventListener('click', (e) => downloadChart(e.target.getAttribute('data-chart')));
+      // One toggle button + dropdown menu per chart, wired by delegation.
+      document.querySelectorAll('.chart-export-wrap').forEach(wrap => {
+        const chartId = wrap.getAttribute('data-chart');
+        const toggleBtn = wrap.querySelector('.chart-export');
+        const menu = wrap.querySelector('.chart-menu');
+        toggleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const willOpen = menu.hidden;
+          closeAllChartMenus();
+          menu.hidden = !willOpen;
+        });
+        menu.querySelectorAll('button[data-action]').forEach(actionBtn => {
+          actionBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const action = actionBtn.getAttribute('data-action');
+            const stamp = new Date().toISOString().slice(0, 10);
+            if (action === 'png') downloadChart(chartId, `${chartId}_${stamp}.png`);
+            else if (action === 'jpg') downloadChartAsJPG(chartId, `${chartId}_${stamp}.jpg`);
+            else if (action === 'pdf') downloadChartAsPDF(chartId, `${chartId}_${stamp}.pdf`);
+            else if (action === 'csv') downloadChartDataCSV(chartId, `${chartId}_data_${stamp}.csv`);
+            menu.hidden = true;
+          });
+        });
       });
+      document.addEventListener('click', () => closeAllChartMenus());
       document.getElementById('exportTableCSV').addEventListener('click', exportTableToCSV);
       document.getElementById('exportTableExcel').addEventListener('click', exportTableToExcel);
       document.getElementById('exportAllCharts').addEventListener('click', exportAllCharts);

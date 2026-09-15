@@ -870,9 +870,9 @@
         }
         const isPortfolio = isAggregateScope(selectedSite);
         const card = head.closest('.chart-card, .table-card');
-        const fixedScope = card && ['siteConsumptionCard','siteRevenueCard'].includes(card.id) ? 'All sites' : card && ['bugarulaGenerationCard','bugarulaFuelCard'].includes(card.id) ? 'Bugarula' : '';
+        const fixedScope = card && ['siteConsumptionCard','siteRevenueCard'].includes(card.id) ? comparisonScopeLabel(selectedSite) : card && ['bugarulaGenerationCard','bugarulaFuelCard'].includes(card.id) ? 'Bugarula' : '';
         const label = fixedScope || scopeLabel(selectedSite);
-        const badgeIsPortfolio = fixedScope === 'All sites' || (!fixedScope && isPortfolio);
+        const badgeIsPortfolio = fixedScope === 'All sites' || fixedScope === 'DRC sites' || fixedScope === 'Lolwe villages' || (!fixedScope && isPortfolio);
         badge.className = `scope-badge dynamic-scope-badge ${badgeIsPortfolio ? 'scope-portfolio' : 'scope-site'}`;
         badge.textContent = label;
       });
@@ -1085,6 +1085,23 @@
     function isAggregateScope(selectedSite) {
       return selectedSite === 'All Sites' || selectedSite === 'DRC Portfolio' || selectedSite === 'Lolwe Portfolio';
     }
+    // The site/village comparison chart and table need their own "latest
+    // reporting month" restricted to whichever country the current scope
+    // belongs to - DRC and Lolwe report on different cadences (DRC currently
+    // lags Lolwe's live feed by a month or more), so picking the single
+    // globally-latest month across BOTH would silently drop one country's
+    // sites from the comparison entirely whenever that country selected.
+    function comparisonGroupSites(selectedSite) {
+      if (selectedSite === 'DRC Portfolio' || DRC_SITES.includes(canonicalizeSiteName(selectedSite))) return DRC_SITES;
+      if (selectedSite === 'Lolwe Portfolio' || LOLWE_SITES.includes(canonicalizeSiteName(selectedSite))) return LOLWE_SITES;
+      return null; // 'All Sites' - compare everything, using the true global latest month
+    }
+    function comparisonScopeLabel(selectedSite) {
+      const group = comparisonGroupSites(selectedSite);
+      if (group === DRC_SITES) return 'DRC sites';
+      if (group === LOLWE_SITES) return 'Lolwe villages';
+      return 'All sites';
+    }
 
     function updateMeta(latest, selectedSite, monthlyRows) {
       document.getElementById('latestMonthBadge').textContent = latest.month || '—';
@@ -1109,8 +1126,10 @@
       toggleBugarulaCards(selectedSite);
       updateChartScopeBadges(selectedSite);
 
-      const compareMonthSort = latestMonthSort(siteRowsDateRange);
-      const comparisonRows = siteRowsDateRange.filter(r => r.month_sort === compareMonthSort).sort((a,b) => (b.consumption_kwh||0) - (a.consumption_kwh||0));
+      const comparisonGroup = comparisonGroupSites(selectedSite);
+      const comparisonPool = comparisonGroup ? siteRowsDateRange.filter(r => comparisonGroup.includes(canonicalizeSiteName(r.site))) : siteRowsDateRange;
+      const compareMonthSort = latestMonthSort(comparisonPool);
+      const comparisonRows = comparisonPool.filter(r => r.month_sort === compareMonthSort).sort((a,b) => (b.consumption_kwh||0) - (a.consumption_kwh||0));
       const comparisonMonth = comparisonRows[0]?.month || '—';
       const chartTitles = updateChartTitles(selectedSite, comparisonMonth);
       document.getElementById('generationScopePill').textContent = `${scopeLabel(selectedSite)} scope`;

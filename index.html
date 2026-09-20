@@ -226,6 +226,16 @@
       <div class="chart-card" id="plannedCostCard"><div class="card-head"><div><h3 id="plannedCostTitle">Portfolio: Planned vs Actual Cost by Month</h3></div></div><div class="chart-wrap"><canvas id="plannedCostChart"></canvas></div></div>
     </div>
 
+    <div class="section-grid-2" id="lolweKpiSection" style="display:none">
+      <div class="chart-card" id="lolweRevenueCard"><div class="card-head"><div><h3>Lolwe: Revenue by stream</h3></div><span class="pill">Master sheet · USD</span></div><div class="chart-wrap"><canvas id="lolweRevenueChart"></canvas></div></div>
+      <div class="chart-card" id="lolweEnergyCard"><div class="card-head"><div><h3>Lolwe: Plant energy and customer consumption</h3></div><span class="pill">AlphaESS · SparkMeter</span></div><div class="chart-wrap"><canvas id="lolweEnergyChart"></canvas></div></div>
+    </div>
+
+    <div class="section-grid-2" id="lolweAvailabilitySection" style="display:none">
+      <div class="chart-card" id="lolweAvailabilityCard"><div class="card-head"><div><h3>Lolwe: Power availability by month</h3></div><span class="pill">Hours per day</span></div><div class="chart-wrap"><canvas id="lolweAvailabilityChart"></canvas></div></div>
+      <div class="chart-card" id="lolweCustomerCard"><div class="card-head"><div><h3>Lolwe: Active customers and service-fee subscribers</h3></div><span class="pill">Master sheet</span></div><div class="chart-wrap"><canvas id="lolweCustomerChart"></canvas></div></div>
+    </div>
+
     <div class="table-card wide">
       <div class="card-head"><div><h3 id="tableTitle">Latest Available Site Table</h3></div></div>
       <div style="max-height: 420px; overflow:auto;">
@@ -260,7 +270,8 @@
       tabs: {
         siteSheets: ['Bugarula', 'Bunyakiri', 'Buyumbu', 'Kashiraboba', 'Mugote', 'Lolwe Monthly KPIs'],
         categoricalSheets: ['Categorical consumption', 'Lolwe Categorical consumption'],
-        commentarySheet: 'Ops Commentary'
+        commentarySheet: 'Ops Commentary',
+        lolweMasterSheet: 'Lolwe Monthly Master'
       },
       csvUrls: {
         'Kashiraboba': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP6zU6ygZid-trwUn8tTdHm1r6fy1ishiZW5AOw4nAhQpGVbj3cS7JZYiheU6ThUe46RoJnmZI71Sr/pub?output=csv',
@@ -271,7 +282,8 @@
         'Categorical consumption': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP6zU6ygZid-trwUn8tTdHm1r6fy1ishiZW5AOw4nAhQpGVbj3cS7JZYiheU6ThUe46RoJnmZI71Sr/pub?gid=36093025&single=true&output=csv',
         'Ops Commentary': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP6zU6ygZid-trwUn8tTdHm1r6fy1ishiZW5AOw4nAhQpGVbj3cS7JZYiheU6ThUe46RoJnmZI71Sr/pub?gid=1020789940&single=true&output=csv',
         'Lolwe Monthly KPIs': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP6zU6ygZid-trwUn8tTdHm1r6fy1ishiZW5AOw4nAhQpGVbj3cS7JZYiheU6ThUe46RoJnmZI71Sr/pub?gid=1706202601&single=true&output=csv',
-        'Lolwe Categorical consumption': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP6zU6ygZid-trwUn8tTdHm1r6fy1ishiZW5AOw4nAhQpGVbj3cS7JZYiheU6ThUe46RoJnmZI71Sr/pub?gid=1706202602&single=true&output=csv'
+        'Lolwe Categorical consumption': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP6zU6ygZid-trwUn8tTdHm1r6fy1ishiZW5AOw4nAhQpGVbj3cS7JZYiheU6ThUe46RoJnmZI71Sr/pub?gid=1706202602&single=true&output=csv',
+        'Lolwe Monthly Master': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP6zU6ygZid-trwUn8tTdHm1r6fy1ishiZW5AOw4nAhQpGVbj3cS7JZYiheU6ThUe46RoJnmZI71Sr/pub?gid=2095487275&single=true&output=csv'
       },
       fallbackEnabled: false
     };
@@ -643,6 +655,41 @@
       return output;
     }
 
+    // Lolwe's site-level monthly KPIs. Kept apart from the village rows so portfolio
+    // aggregates are not double counted; these drive the Lolwe-only cards.
+    function parseLolweMasterRows(csvText) {
+      const rows = parseCSV(csvText);
+      if (!rows.length) return [];
+      const headers = rows[0].map(normalizeHeader);
+      const pick = (row, ...names) => {
+        for (const name of names) {
+          const index = headers.indexOf(name);
+          if (index >= 0) { const value = cleanNumber(row[index]); if (value !== null) return value; }
+        }
+        return null;
+      };
+      const monthIdx = headers.indexOf('month');
+      if (monthIdx < 0) return [];
+      return rows.slice(1).map(row => {
+        const info = parseMonthInfo(row[monthIdx]);
+        if (!info) return null;
+        return {
+          ...info,
+          electricity_usd: pick(row, 'electricity_sales_usd'),
+          service_fee_usd: pick(row, 'service_fee_usd'),
+          ice_usd: pick(row, 'ice_and_ph_sales_usd'),
+          revenue_usd: pick(row, 'revenue_usd'),
+          generation_kwh: pick(row, 'solar_generation_kwh'),
+          plant_load_kwh: pick(row, 'plant_load_kwh'),
+          consumption_kwh: pick(row, 'sparkmeter_consumption_kwh'),
+          power_on_hours: pick(row, 'power_on_hours_day'),
+          power_off_hours: pick(row, 'power_off_hours_day'),
+          active_customers: pick(row, 'active_customers'),
+          sf_subscribers: pick(row, 'sf_subscribers')
+        };
+      }).filter(Boolean).sort((a, b) => a.month_sort - b.month_sort);
+    }
+
     function parseCommentaryRows(csvText) {
       const rows = parseCSV(csvText);
       if (!rows.length) return [];
@@ -697,12 +744,22 @@
       else { banner.style.display='none'; banner.textContent=''; }
     }
 
+    // Several source cells are IMPORTRANGE formulas. When Google rebuilds the published
+    // CSV before an import has resolved it serves the literal text "Loading..." in place of
+    // the value, which would drop that site's revenue for the month. Re-fetch a few times so
+    // a half-resolved snapshot never reaches the page.
     async function fetchCsv(sheetName) {
       const url = DASHBOARD_CONFIG.csvUrls[sheetName];
       if (!url) throw new Error(`No CSV URL configured for ${sheetName}`);
-      const response = await fetch(url, { cache:'no-store', mode:'cors', credentials:'omit' });
-      if (!response.ok) throw new Error(`${sheetName}: HTTP ${response.status}`);
-      return await response.text();
+      let text = '';
+      for (let attempt = 1; attempt <= 4; attempt++) {
+        const response = await fetch(`${url}&_=${Date.now()}_${attempt}`, { cache:'no-store', mode:'cors', credentials:'omit' });
+        if (!response.ok) throw new Error(`${sheetName}: HTTP ${response.status}`);
+        text = await response.text();
+        if (!text.includes('Loading...')) return text;
+        await new Promise(resolve => setTimeout(resolve, 900 * attempt));
+      }
+      return text;
     }
 
     async function loadData() {
@@ -720,18 +777,21 @@
       let commentaryRows = [];
       try { commentaryRows = parseCommentaryRows(await fetchCsv(DASHBOARD_CONFIG.tabs.commentarySheet)); }
       catch (e) { commentaryRows = []; }
+      let lolweMasterRows = [];
+      try { lolweMasterRows = parseLolweMasterRows(await fetchCsv(DASHBOARD_CONFIG.tabs.lolweMasterSheet)); }
+      catch (e) { lolweMasterRows = []; }
       if (goodSiteRows.length > 0) {
         const revenueRows = goodSiteRows.filter(r => r.revenue_usd !== null).length;
         const outageRows = goodSiteRows.filter(r => r.outages !== null).length;
         setStatus('Live published sheet', `Loaded ${goodSiteRows.length} records. Revenue rows: ${revenueRows}. Outage rows: ${outageRows}.`, errors.length ? `Some tabs had issues:\n${errors.join('\n')}` : '');
-        return { siteMonthly: goodSiteRows, categorical: categoricalRows, commentary: commentaryRows };
+        return { siteMonthly: goodSiteRows, categorical: categoricalRows, commentary: commentaryRows, lolweMaster: lolweMasterRows };
       }
       if (DASHBOARD_CONFIG.fallbackEnabled) {
         setStatus('Fallback sample', 'Live Google Sheet load failed. Using bundled sample data.', errors.join('\n') || 'Live load failed.');
-        return { ...JSON.parse(JSON.stringify(FALLBACK_DATA)), commentary: [] };
+        return { ...JSON.parse(JSON.stringify(FALLBACK_DATA)), commentary: [], lolweMaster: [] };
       }
       setStatus('No data', 'No dashboard data could be loaded.', errors.join('\n'));
-      return { siteMonthly: [], categorical: [], commentary: [] };
+      return { siteMonthly: [], categorical: [], commentary: [], lolweMaster: [] };
     }
 
     function sum(rows, field) { return rows.reduce((t,r) => t + (cleanNumber(r[field]) || 0), 0); }
@@ -870,7 +930,9 @@
         }
         const isPortfolio = isAggregateScope(selectedSite);
         const card = head.closest('.chart-card, .table-card');
-        const fixedScope = card && ['siteConsumptionCard','siteRevenueCard'].includes(card.id) ? comparisonScopeLabel(selectedSite) : card && ['bugarulaGenerationCard','bugarulaFuelCard'].includes(card.id) ? 'Bugarula' : '';
+        const fixedScope = card && ['siteConsumptionCard','siteRevenueCard'].includes(card.id) ? comparisonScopeLabel(selectedSite)
+          : card && ['bugarulaGenerationCard','bugarulaFuelCard'].includes(card.id) ? 'Bugarula'
+          : card && ['lolweRevenueCard','lolweEnergyCard','lolweAvailabilityCard','lolweCustomerCard'].includes(card.id) ? 'Lolwe, Uganda' : '';
         const label = fixedScope || scopeLabel(selectedSite);
         const badgeIsPortfolio = fixedScope === 'All sites' || fixedScope === 'DRC sites' || fixedScope === 'Lolwe villages' || (!fixedScope && isPortfolio);
         badge.className = `scope-badge dynamic-scope-badge ${badgeIsPortfolio ? 'scope-portfolio' : 'scope-site'}`;
@@ -1173,6 +1235,8 @@
         {label:'Actual Cost', data:safeSeries(monthlyScope,'actual_opex_usd'), backgroundColor:COLOR.coral}
       ]}, options:chartOptions({prefix:'$', title:chartTitles.plannedCostTitle})});
 
+      renderLolweCards(filterByDateRange(data.lolweMaster || [], startSort, endSort), selectedSite);
+
       const categoryMonthly = aggregateCategorical(scopeCategorical);
       makeChart('categoryChart','categoryChart',{
         type:'bar',
@@ -1200,6 +1264,36 @@
 
       const tableRows = comparisonRows.filter(r => isInScope(r.site, selectedSite));
       renderTable(tableRows, selectedSite);
+    }
+
+    // Shown whenever Lolwe is in scope; the figures are for Lolwe as a whole, never one village.
+    function renderLolweCards(rows, selectedSite) {
+      const inScope = selectedSite === 'All Sites' || selectedSite === 'Lolwe Portfolio'
+        || LOLWE_SITES.includes(canonicalizeSiteName(selectedSite));
+      const sections = ['lolweKpiSection', 'lolweAvailabilitySection'];
+      if (!inScope || !rows.length) { sections.forEach(id => document.getElementById(id).style.display = 'none'); return; }
+      sections.forEach(id => document.getElementById(id).style.display = '');
+      const labels = rows.map(r => r.month);
+      const stacked = chartOptions({prefix:'$', title:'Lolwe revenue by stream'});
+      stacked.scales.x.stacked = true; stacked.scales.y.stacked = true;
+      makeChart('lolweRevenueChart','lolweRevenueChart',{type:'bar', data:{labels, datasets:[
+        {label:'Electricity', data:safeSeries(rows,'electricity_usd'), backgroundColor:COLOR.teal, stack:'rev'},
+        {label:'Service fee', data:safeSeries(rows,'service_fee_usd'), backgroundColor:COLOR.blue, stack:'rev'},
+        {label:'Ice / productive hub', data:safeSeries(rows,'ice_usd'), backgroundColor:COLOR.amber, stack:'rev'}
+      ]}, options:stacked});
+      makeChart('lolweEnergyChart','lolweEnergyChart',{type:'bar', data:{labels, datasets:[
+        {label:'Plant generation (AlphaESS)', data:safeSeries(rows,'generation_kwh'), backgroundColor:COLOR.green},
+        {label:'Plant load', data:safeSeries(rows,'plant_load_kwh'), backgroundColor:COLOR.slate},
+        {label:'Customer consumption (SparkMeter)', data:safeSeries(rows,'consumption_kwh'), backgroundColor:COLOR.teal}
+      ]}, options:chartOptions({suffix:' kWh', title:'Lolwe plant energy'})});
+      makeChart('lolweAvailabilityChart','lolweAvailabilityChart',{type:'bar', data:{labels, datasets:[
+        {label:'Power on (hours/day)', data:safeSeries(rows,'power_on_hours'), backgroundColor:COLOR.green, stack:'hrs'},
+        {label:'Power off (hours/day)', data:safeSeries(rows,'power_off_hours'), backgroundColor:COLOR.coral, stack:'hrs'}
+      ]}, options:(() => { const o = chartOptions({suffix:' h', digits:1, title:'Lolwe power availability'}); o.scales.x.stacked = true; o.scales.y.stacked = true; return o; })()});
+      makeChart('lolweCustomerChart','lolweCustomerChart',{type:'bar', data:{labels, datasets:[
+        {label:'Active customers', data:safeSeries(rows,'active_customers'), backgroundColor:COLOR.blue},
+        {label:'Service-fee subscribers', data:safeSeries(rows,'sf_subscribers'), backgroundColor:COLOR.purple}
+      ]}, options:chartOptions({title:'Lolwe customers'})});
     }
 
     function renderOpsCommentary(entries, monthSort, monthLabel) {

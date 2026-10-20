@@ -185,7 +185,7 @@
         <div id="totalEnergy" class="big">—</div>
       </div>
       <div class="card active-customers">
-        <h3>Max Active Customers</h3>
+        <h3>Active Customers (latest month)</h3>
         <div id="maxCustomers" class="big">—</div>
       </div>
       <div class="card avg-arpu">
@@ -299,7 +299,9 @@
     // This clone is the DRC-only stakeholder view: Uganda/Lolwe has its own separate
     // dashboard, so its rows (and the sheet's own cross-site "All sites" rollup, which
     // would otherwise mix Lolwe back in) are dropped before anything renders.
-    const EXCLUDED_SITES = new Set(["Lolwe", "All sites"]);
+    // Gakagati is decommissioned; Kishenyi is already inside "Bugarula&Kish", so listing it
+    // separately would count it twice in the totals.
+    const EXCLUDED_SITES = new Set(["Lolwe", "All sites", "Gakagati", "Kishenyi"]);
 
     Chart.register(ChartDataLabels);
 
@@ -452,7 +454,11 @@
       const siteRows = filteredData.filter(d => d["Site Name"] && d["Site Name"] !== "All sites");
       const totalRevenue = siteRows.reduce((s, r) => s + (r["Monthly Total (USD)"] || 0), 0);
       const totalEnergy = siteRows.reduce((s, r) => s + (r["Consumed kWh"] || 0), 0);
-      const maxCustomers = siteRows.reduce((max, r) => Math.max(max, r["Active Customers"] || 0), 0);
+      // Active customers across the selected sites in the latest month shown (not the largest
+      // single site-month), so "All sites" gives the current portfolio figure.
+      const latestTime = siteRows.reduce((m, r) => Math.max(m, r["Month Date"] ? r["Month Date"].getTime() : 0), 0);
+      const maxCustomers = siteRows.filter(r => r["Month Date"] && r["Month Date"].getTime() === latestTime)
+        .reduce((s, r) => s + (r["Active Customers"] || 0), 0);
       const arpus = siteRows.map(r => r["ARPU (USD)"]).filter(Number.isFinite);
       const avgARPU = arpus.length ? arpus.reduce((s, x) => s + x, 0) / arpus.length : 0;
 

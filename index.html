@@ -231,6 +231,11 @@
       <div class="chart-card" id="lolweEnergyCard"><div class="card-head"><div><h3>Lolwe: Plant energy and customer consumption</h3></div><span class="pill">AlphaESS · SparkMeter</span></div><div class="chart-wrap"><canvas id="lolweEnergyChart"></canvas></div></div>
     </div>
 
+    <div class="section-grid-2" id="lolweWeeklySection" style="display:none">
+      <div class="chart-card"><div class="card-head"><div><h3>Lolwe: Collections by week</h3></div><span class="pill" id="lolweWeeklyPill">Salesforce · provisional</span></div><div class="chart-wrap"><canvas id="lolweWeeklyChart"></canvas></div></div>
+      <div class="chart-card"><div class="card-head"><div><h3 id="lolweWeeklyVillageTitle">Lolwe: Collections by village, latest week</h3></div><span class="pill">USD excl. VAT</span></div><div class="chart-wrap"><canvas id="lolweWeeklyVillageChart"></canvas></div></div>
+    </div>
+
     <div class="section-grid-2" id="lolweAvailabilitySection" style="display:none">
       <div class="chart-card" id="lolweAvailabilityCard"><div class="card-head"><div><h3>Lolwe: Power availability by month</h3></div><span class="pill">Hours per day</span></div><div class="chart-wrap"><canvas id="lolweAvailabilityChart"></canvas></div></div>
       <div class="chart-card" id="lolweCustomerCard"><div class="card-head"><div><h3>Lolwe: Active customers and service-fee subscribers</h3></div><span class="pill">Master sheet</span></div><div class="chart-wrap"><canvas id="lolweCustomerChart"></canvas></div></div>
@@ -271,7 +276,8 @@
         siteSheets: ['Bugarula', 'Bunyakiri', 'Buyumbu', 'Kashiraboba', 'Mugote', 'Lolwe Monthly KPIs'],
         categoricalSheets: ['Categorical consumption', 'Lolwe Categorical consumption'],
         commentarySheet: 'Ops Commentary',
-        lolweMasterSheet: 'Lolwe Monthly Master'
+        lolweMasterSheet: 'Lolwe Monthly Master',
+        lolweWeeklySheet: 'Lolwe Weekly (provisional)'
       },
       csvUrls: {
         'Kashiraboba': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP6zU6ygZid-trwUn8tTdHm1r6fy1ishiZW5AOw4nAhQpGVbj3cS7JZYiheU6ThUe46RoJnmZI71Sr/pub?output=csv',
@@ -283,7 +289,8 @@
         'Ops Commentary': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP6zU6ygZid-trwUn8tTdHm1r6fy1ishiZW5AOw4nAhQpGVbj3cS7JZYiheU6ThUe46RoJnmZI71Sr/pub?gid=1020789940&single=true&output=csv',
         'Lolwe Monthly KPIs': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP6zU6ygZid-trwUn8tTdHm1r6fy1ishiZW5AOw4nAhQpGVbj3cS7JZYiheU6ThUe46RoJnmZI71Sr/pub?gid=1706202601&single=true&output=csv',
         'Lolwe Categorical consumption': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP6zU6ygZid-trwUn8tTdHm1r6fy1ishiZW5AOw4nAhQpGVbj3cS7JZYiheU6ThUe46RoJnmZI71Sr/pub?gid=1706202602&single=true&output=csv',
-        'Lolwe Monthly Master': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP6zU6ygZid-trwUn8tTdHm1r6fy1ishiZW5AOw4nAhQpGVbj3cS7JZYiheU6ThUe46RoJnmZI71Sr/pub?gid=2095487275&single=true&output=csv'
+        'Lolwe Monthly Master': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP6zU6ygZid-trwUn8tTdHm1r6fy1ishiZW5AOw4nAhQpGVbj3cS7JZYiheU6ThUe46RoJnmZI71Sr/pub?gid=2095487275&single=true&output=csv',
+        'Lolwe Weekly (provisional)': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP6zU6ygZid-trwUn8tTdHm1r6fy1ishiZW5AOw4nAhQpGVbj3cS7JZYiheU6ThUe46RoJnmZI71Sr/pub?gid=1723423266&single=true&output=csv'
       },
       fallbackEnabled: false
     };
@@ -295,7 +302,9 @@
     // Rate is UGX per USD, from the Lolwe master sheet's 1_FX_Rates tab (URA EoM).
     const LOLWE_FX_BY_MONTH_SORT = {
       202601: 3602.82, 202602: 3599.64, 202603: 3756.41, 202604: 3732.86,
-      202605: 3776.95, 202606: 3665.14, 202607: 3749.29, 202608: 3770.00
+      202605: 3776.95, 202606: 3665.14, 202607: 3749.29, 202608: 3770.00,
+      202609: 3920.00,
+      202610: 3920.00 // provisional: September's URA rate until Finance enters October's
     };
     const DRC_SITES = ['Bugarula', 'Bunyakiri', 'Buyumbu', 'Kashiraboba', 'Mugote'];
     const LOLWE_SITES = ['Butanira', 'Golofa', 'Kamwanga', 'Kandenge', 'Kisumu', 'Labolo Resort', 'Mwango', 'Mwangoda', 'Singila'];
@@ -690,6 +699,49 @@
       }).filter(Boolean).sort((a, b) => a.month_sort - b.month_sort);
     }
 
+    // Provisional weekly collections from Salesforce (lolwe-weekly). Internal only: the
+    // monthly cards above stay on Finance's figures. USD is already net of VAT.
+    function parseLolweWeeklyRows(csvText) {
+      const rows = parseCSV(csvText);
+      if (!rows.length) return [];
+      const headers = rows[0].map(normalizeHeader);
+      const col = name => headers.indexOf(name);
+      const villages = rows[0].map((h, i) => ({ name: String(h).replace(/\s*\(UGX\)\s*$/, ''), i }))
+        .filter(v => /\(UGX\)\s*$/.test(rows[0][v.i]) && !/sales|fee|appliances|total/i.test(v.name));
+      return rows.slice(1).filter(r => r[col('week_start')]).map(r => {
+        const fx = cleanNumber(r[col('fx_ugx_per_usd')]) || null;
+        const usd = v => (fx && cleanNumber(v) !== null) ? cleanNumber(v) / 1.18 / fx : null;
+        return {
+          label: r[col('week')], start: r[col('week_start')], data_to: r[col('data_to')], status: r[col('status')],
+          electricity_usd: usd(r[col('electricity_sales_ugx')]), service_fee_usd: usd(r[col('service_fee_ugx')]),
+          ice_usd: usd(r[col('ice_and_ph_sales_ugx')]), total_usd: cleanNumber(r[col('total_excl_vat_usd')]),
+          payments: cleanNumber(r[col('payments')]),
+          villages: villages.map(v => ({ name: v.name, usd: usd(r[v.i]) }))
+        };
+      }).sort((a, b) => a.start.localeCompare(b.start));
+    }
+
+    function renderLolweWeekly(rows, inScope) {
+      const section = document.getElementById('lolweWeeklySection');
+      if (!inScope || !rows.length) { section.style.display = 'none'; return; }
+      section.style.display = '';
+      const recent = rows.slice(-8);
+      const latest = recent[recent.length - 1];
+      setText('lolweWeeklyPill', `Salesforce · provisional · to ${latest.data_to}`);
+      const opts = chartOptions({prefix:'$', title:'Lolwe weekly collections (USD excl. VAT)'});
+      opts.scales.x.stacked = true; opts.scales.y.stacked = true;
+      makeChart('lolweWeeklyChart','lolweWeeklyChart',{type:'bar', data:{labels:recent.map(r => r.label + (r.status.includes('part') ? ' *' : '')), datasets:[
+        {label:'Electricity', data:recent.map(r => r.electricity_usd), backgroundColor:COLOR.teal, stack:'wk'},
+        {label:'Service fee', data:recent.map(r => r.service_fee_usd), backgroundColor:COLOR.blue, stack:'wk'},
+        {label:'Ice / productive hub', data:recent.map(r => r.ice_usd), backgroundColor:COLOR.amber, stack:'wk'}
+      ]}, options:opts});
+      const villages = latest.villages.filter(v => v.usd).sort((a, b) => b.usd - a.usd);
+      setText('lolweWeeklyVillageTitle', `Lolwe: Collections by village, ${latest.label}`);
+      makeChart('lolweWeeklyVillageChart','lolweWeeklyVillageChart',{type:'bar', data:{labels:villages.map(v => v.name), datasets:[
+        {label:'Collections (USD excl. VAT)', data:villages.map(v => v.usd), backgroundColor:COLOR.teal}
+      ]}, options:chartOptions({prefix:'$', title:'Latest week by village'})});
+    }
+
     function parseCommentaryRows(csvText) {
       const rows = parseCSV(csvText);
       if (!rows.length) return [];
@@ -780,11 +832,14 @@
       let lolweMasterRows = [];
       try { lolweMasterRows = parseLolweMasterRows(await fetchCsv(DASHBOARD_CONFIG.tabs.lolweMasterSheet)); }
       catch (e) { lolweMasterRows = []; }
+      let lolweWeeklyRows = [];
+      try { lolweWeeklyRows = parseLolweWeeklyRows(await fetchCsv(DASHBOARD_CONFIG.tabs.lolweWeeklySheet)); }
+      catch (e) { lolweWeeklyRows = []; }
       if (goodSiteRows.length > 0) {
         const revenueRows = goodSiteRows.filter(r => r.revenue_usd !== null).length;
         const outageRows = goodSiteRows.filter(r => r.outages !== null).length;
         setStatus('Live published sheet', `Loaded ${goodSiteRows.length} records. Revenue rows: ${revenueRows}. Outage rows: ${outageRows}.`, errors.length ? `Some tabs had issues:\n${errors.join('\n')}` : '');
-        return { siteMonthly: goodSiteRows, categorical: categoricalRows, commentary: commentaryRows, lolweMaster: lolweMasterRows };
+        return { siteMonthly: goodSiteRows, categorical: categoricalRows, commentary: commentaryRows, lolweMaster: lolweMasterRows, lolweWeekly: lolweWeeklyRows };
       }
       if (DASHBOARD_CONFIG.fallbackEnabled) {
         setStatus('Fallback sample', 'Live Google Sheet load failed. Using bundled sample data.', errors.join('\n') || 'Live load failed.');
@@ -1236,6 +1291,8 @@
       ]}, options:chartOptions({prefix:'$', title:chartTitles.plannedCostTitle})});
 
       renderLolweCards(filterByDateRange(data.lolweMaster || [], startSort, endSort), selectedSite);
+      renderLolweWeekly(data.lolweWeekly || [], selectedSite === 'All Sites' || selectedSite === 'Lolwe Portfolio'
+        || LOLWE_SITES.includes(canonicalizeSiteName(selectedSite)));
 
       const categoryMonthly = aggregateCategorical(scopeCategorical);
       makeChart('categoryChart','categoryChart',{
